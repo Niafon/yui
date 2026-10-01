@@ -9,6 +9,7 @@ import { normalizeAvatarId } from "./avatar/builtin";
 export type Theme = "system" | "dark" | "light";
 export type Backdrop = "aurora" | "plain" | "transparent";
 export type MicMode = "push" | "handsfree";
+export type UiLang = "auto" | "ru" | "en";
 
 export interface Prefs {
   avatar: string;
@@ -23,6 +24,8 @@ export interface Prefs {
   lipSensitivity: number;
   lipEngine: "auto" | "spectral";
   micMode: MicMode;
+  vadEngine: "silero" | "energy";
+  lang: UiLang;
   vadSensitivity: number;
   bargeIn: boolean;
   sendOnEnter: boolean;
@@ -43,6 +46,8 @@ export const DEFAULT_PREFS: Prefs = {
   lipSensitivity: 1,
   lipEngine: "auto",
   micMode: "push",
+  vadEngine: "silero",
+  lang: "auto",
   vadSensitivity: 1,
   bargeIn: false,
   sendOnEnter: true,

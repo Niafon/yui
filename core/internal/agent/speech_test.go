@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"net/http"
@@ -223,5 +224,84 @@ func TestTurnWaitsForFinalSpeechChunk(t *testing.T) {
 		case <-ctx.Done():
 			t.Fatal("missing turn.done")
 		}
+	}
+}
+
+func TestCloudVoiceNeedsConsentForReplyText(t *testing.T) {
+	var hits atomic.Int32
+	cloud := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hits.Add(1)
+		_, _ = w.Write(bytes.Repeat([]byte{1, 0}, 2400))
+	}))
+	defer cloud.Close()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	st, err := memstore.Open(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer st.Close()
+	cfg := config.Default()
+	reg := provider.NewRegistry()
+	if err := reg.Build(cfg.Providers, cfg.Defaults); err != nil {
+		t.Fatal(err)
+	}
+	if err := reg.Register(model.ProviderConfig{ID: "cloud-voice", Kind: model.KindTTS, Driver: "openai", Endpoint: cloud.URL, Local: false}); err != nil {
+		t.Fatal(err)
+	}
+	if err := reg.SetDefault(model.KindTTS, "cloud-voice"); err != nil {
+		t.Fatal(err)
+	}
+	bus := eventbus.New()
+	aud := audit.New(st.Audit(), bus)
+	perms := permission.New(st.Permissions(), cfg.Privacy.LocalAllowedCategories)
+	mem := memory.New(st.Memory(), perms, aud, reg, bus, cfg.Memory)
+	ident := identity.New(st.Identities(), aud)
+	self, err := ident.EnsureDefault(ctx, "test-owner")
+	if err != nil {
+		t.Fatal(err)
+	}
+	sessions := session.NewManager(st.Sessions(), bus)
+	sess, err := sessions.Start(ctx, self.ID, "test-owner", "desktop", model.ModeNormal, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	events, unsubscribe := sessions.Subscribe(sess.ID, 512)
+	defer unsubscribe()
+	runtime := NewRuntime(reg, perms, aud, mem, memory.NewExtractor(reg), ident, sessions, tools.NewRegistry())
+
+	turn := func() (asked *permission.Pending, audio int) {
+		if _, err := runtime.HandleUserTurn(ctx, TurnInput{SessionID: sess.ID, Text: "Расскажи что-нибудь", DeviceID: "desktop", SpeakerIsOwner: true}); err != nil {
+			t.Fatal(err)
+		}
+		for {
+			select {
+			case ev := <-events:
+				switch ev.Type {
+				case session.FramePermission:
+					var p permission.Pending
+					_ = json.Unmarshal([]byte(ev.Payload), &p)
+					if p.Category == model.CatConversation && p.Provider == "cloud-voice" {
+						asked = &p
+					}
+				case session.FrameAudio:
+					audio++
+				case session.FrameTurnDone:
+					return asked, audio
+				}
+			case <-ctx.Done():
+				t.Fatal("missing turn.done")
+			}
+		}
+	}
+	asked, audio := turn()
+	if asked == nil || audio != 0 || hits.Load() != 0 {
+		t.Fatalf("first turn: asked=%v audio=%d cloud hits=%d; reply text must not leave without consent", asked, audio, hits.Load())
+	}
+	if err := perms.Resolve(ctx, asked.ID, true, false); err != nil {
+		t.Fatal(err)
+	}
+	if _, audio = turn(); audio == 0 || hits.Load() == 0 {
+		t.Fatalf("after one-time consent: audio=%d cloud hits=%d", audio, hits.Load())
 	}
 }

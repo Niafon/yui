@@ -3,6 +3,8 @@
  * and never persists memory of its own (CL-006, ADR-007).
  */
 
+import { t } from "./i18n";
+
 export interface Frame {
   type: string;
   at: string;
@@ -105,15 +107,17 @@ export interface CatalogModel {
   credential_ready: boolean;
   api_key_env?: string;
   user_added: boolean;
+  voice?: string;
 }
 
 export interface AddModelInput {
-  kind: "llm" | "vision" | "embeddings";
+  kind: "llm" | "vision" | "embeddings" | "tts";
   source: "local" | "provider";
   service: string;
   endpoint: string;
   model: string;
   api_key_env: string;
+  voice?: string;
 }
 
 export interface MemoryItem {
@@ -404,12 +408,12 @@ export class CoreClient {
 
   /** Sends a typed message on the data plane. */
   send(message: Record<string, unknown>): void {
-    if (this.data?.readyState !== WebSocket.OPEN) throw new Error("Соединение ещё не готово. Подключитесь повторно.");
+    if (this.data?.readyState !== WebSocket.OPEN) throw new Error(t("conn.notReady"));
     this.data.send(JSON.stringify(message));
   }
 
   sendAudio(pcm: ArrayBuffer): void {
-    if (this.data?.readyState !== WebSocket.OPEN) throw new Error("Соединение потеряно");
+    if (this.data?.readyState !== WebSocket.OPEN) throw new Error(t("conn.lostError"));
     this.data.send(pcm);
   }
 

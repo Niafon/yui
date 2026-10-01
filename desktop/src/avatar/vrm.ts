@@ -68,7 +68,7 @@ export class VRMAvatar implements Avatar {
       const gltf = await loader.loadAsync(packagePath);
       if (generation !== this.generation) { VRMUtils.deepDispose(gltf.scene); renderer.dispose(); return false; }
       const model = gltf.userData.vrm as VRM | undefined;
-      if (!model) throw new Error("Файл не содержит VRM-модель");
+      if (!model) throw new Error("The file contains no VRM model");
       VRMUtils.removeUnnecessaryVertices(gltf.scene);
       VRMUtils.combineSkeletons(gltf.scene);
       VRMUtils.combineMorphs(model);

@@ -3,11 +3,9 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import ts from 'typescript';
 
-const source = await readFile(new URL('../src/api.ts', import.meta.url), 'utf8');
-const { outputText } = ts.transpileModule(source, {
-  compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ES2022 },
-});
-const { CoreClient } = await import(`data:text/javascript;base64,${Buffer.from(outputText).toString('base64')}`);
+import { load } from './bundle.mjs';
+
+const { CoreClient } = await load('api.ts');
 
 test('tool approval uses the pending endpoint and an honest button factor', async (t) => {
   const original = globalThis.fetch;

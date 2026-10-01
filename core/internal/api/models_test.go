@@ -45,7 +45,21 @@ func TestAddModelRequestValidatesEndpointAndCredentials(t *testing.T) {
 			b.Endpoint = "https://openrouter.ai.example.com/v1"
 			b.APIKeyEnv = "KEY"
 		}},
-		{"unsupported kind", func(b *addModelRequest) { b.Kind = model.KindTTS }},
+		{"unsupported kind", func(b *addModelRequest) { b.Kind = model.KindSTT }},
+		{"speech service as dialog model", func(b *addModelRequest) {
+			b.Source = "provider"
+			b.Service = "elevenlabs"
+			b.Endpoint = "https://api.elevenlabs.io/v1"
+			b.APIKeyEnv = "KEY"
+		}},
+		{"azure lookalike", func(b *addModelRequest) {
+			b.Kind = model.KindTTS
+			b.Source = "provider"
+			b.Service = "azure"
+			b.Endpoint = "https://evil.example.com/cognitiveservices/v1"
+			b.APIKeyEnv = "KEY"
+		}},
+		{"voice markup", func(b *addModelRequest) { b.Kind = model.KindTTS; b.Voice = `x"/><evil` }},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			request := base
@@ -58,6 +72,30 @@ func TestAddModelRequestValidatesEndpointAndCredentials(t *testing.T) {
 	remote := addModelRequest{Kind: model.KindLLM, Source: "provider", Service: "custom", Endpoint: "https://api.example.com/v1", Model: "model-x", APIKeyEnv: "MODEL_API_KEY"}
 	if cfg, err := remote.config(); err != nil || cfg.Local || cfg.APIKeyEnv != remote.APIKeyEnv {
 		t.Fatalf("valid hosted model rejected: %+v, %v", cfg, err)
+	}
+}
+
+func TestAddSpeechModels(t *testing.T) {
+	for _, tc := range []struct {
+		request addModelRequest
+		driver  string
+		model   string
+	}{
+		{addModelRequest{Kind: model.KindTTS, Source: "provider", Service: "elevenlabs", Endpoint: "https://api.elevenlabs.io/v1", APIKeyEnv: "ELEVENLABS_API_KEY", Voice: "abc"}, "elevenlabs", "eleven_multilingual_v2"},
+		{addModelRequest{Kind: model.KindTTS, Source: "provider", Service: "azure", Endpoint: "https://westeurope.tts.speech.microsoft.com/cognitiveservices/v1", APIKeyEnv: "AZURE_SPEECH_KEY", Voice: "ru-RU-SvetlanaNeural"}, "azure", "azure-neural"},
+		{addModelRequest{Kind: model.KindTTS, Source: "provider", Service: "openai", Endpoint: "https://api.openai.com/v1", APIKeyEnv: "OPENAI_API_KEY"}, "openai", "gpt-4o-mini-tts"},
+		{addModelRequest{Kind: model.KindTTS, Source: "local", Service: "kokoro", Endpoint: "http://127.0.0.1:8880/v1", Model: "kokoro"}, "openai", "kokoro"},
+	} {
+		cfg, err := tc.request.config()
+		if err != nil {
+			t.Fatalf("%s rejected: %v", tc.request.Service, err)
+		}
+		if cfg.Driver != tc.driver || cfg.Model != tc.model || cfg.Voice != tc.request.Voice || cfg.Local != (tc.request.Source == "local") {
+			t.Fatalf("%s config = %+v", tc.request.Service, cfg)
+		}
+		if err := provider.NewRegistry().Register(cfg); err != nil {
+			t.Fatalf("%s cannot register: %v", tc.request.Service, err)
+		}
 	}
 }
 

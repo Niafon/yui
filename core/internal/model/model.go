@@ -421,6 +421,10 @@ type ProviderConfig struct {
 	Model     string       `json:"model,omitempty"`
 	APIKeyEnv string       `json:"api_key_env,omitempty"`
 	Local     bool         `json:"local"`
+	// Voice is a provider-specific voice id for speech drivers (OpenAI voice
+	// name, ElevenLabs voice id, Azure neural voice). Empty uses the identity
+	// voice profile when the service understands it, else a service default.
+	Voice string `json:"voice,omitempty"`
 
 	// Inference metadata is deliberately descriptive: the scheduler never
 	// guesses VRAM use or whether a provider is CPU/GPU backed. Multiple

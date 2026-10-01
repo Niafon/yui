@@ -453,9 +453,14 @@ func (r *Runtime) speak(ctx context.Context, sess *model.Session, ident *model.I
 		}
 		ttsID = d.ProviderID
 	}
-	tts, _, err := r.reg.TTS(ttsID)
+	tts, ttsCfg, err := r.reg.TTS(ttsID)
 	if err != nil {
 		logging.From(ctx).Warn("tts unavailable", "error", err)
+		for range in {
+		}
+		return
+	}
+	if !ttsCfg.Local && !r.remoteSpeechAllowed(ctx, sess, ident, ttsCfg) {
 		for range in {
 		}
 		return
@@ -497,6 +502,33 @@ func (r *Runtime) speak(ctx context.Context, sess *model.Session, ident *model.I
 			}
 		}
 	}
+}
+
+// remoteSpeechAllowed applies the same consent rule as a remote LLM: the reply
+// is conversation content, so a cloud voice may receive it only after the
+// owner allowed that category for this provider (SEC-004). Without consent
+// the turn stays silent and the owner is asked once.
+func (r *Runtime) remoteSpeechAllowed(ctx context.Context, sess *model.Session, ident *model.Identity, cfg model.ProviderConfig) bool {
+	req := permission.Request{
+		SubjectKind: model.SubjectProvider, SubjectID: cfg.ID,
+		Category: model.CatConversation, Action: model.ActionTransmit, Provider: &cfg,
+	}
+	res, err := r.perms.Check(ctx, req)
+	if err == nil && res.Decision == model.DecisionAllow {
+		r.audit.ProviderCall(ctx, ident.ID, cfg.ID, "speech", []model.Category{model.CatConversation}, model.DecisionAllow, "ok", nil)
+		r.sessions.Publish(sess.ID, session.FrameManifest, map[string]any{
+			"provider": cfg.ID, "remote": true,
+			"included_categories": []model.Category{model.CatConversation},
+			"excluded_categories": []model.Category{},
+			"at":                  time.Now().UTC(),
+		})
+		return true
+	}
+	if err == nil && res.Decision == model.DecisionAsk {
+		r.sessions.Publish(sess.ID, session.FramePermission, r.perms.RecordPending(req, model.ConfirmButton))
+	}
+	logging.From(ctx).Info("remote speech skipped", "provider", cfg.ID, "decision", res.Decision, "error", err)
+	return false
 }
 
 func (r *Runtime) fail(ctx context.Context, sessionID, stage string, err error) {

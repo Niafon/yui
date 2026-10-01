@@ -19,7 +19,7 @@ export const BUILTIN_AVATARS: AvatarEntry[] = [
   { id: "hiyori", label: "Hiyori", kind: "live2d", url: "/assets/live2d/hiyori/Hiyori.model3.json", builtin: true, note: "Live2D sample" },
   { id: "natori", label: "Natori", kind: "live2d", url: "/assets/live2d/natori/Natori.model3.json", builtin: true, note: "Live2D sample" },
   { id: "haru", label: "Haru", kind: "live2d", url: "/assets/live2d/haru/Haru.model3.json", builtin: true, note: "Live2D sample" },
-  { id: "mao", label: "Mao", kind: "live2d", url: "/assets/live2d/mao/Mao.model3.json", builtin: true, note: "Live2D sample · гласные" },
+  { id: "mao", label: "Mao", kind: "live2d", url: "/assets/live2d/mao/Mao.model3.json", builtin: true, note: "Live2D sample · vowels" },
 ];
 
 export const DEFAULT_AVATAR = "shino";

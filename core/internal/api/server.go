@@ -84,7 +84,7 @@ func New(deps Deps) *Server {
 	return s
 }
 
-func (s *Server) Handler() http.Handler { return s.logging(s.mux) }
+func (s *Server) Handler() http.Handler { return s.cors(s.logging(s.mux)) }
 
 func (s *Server) routes() {
 	m := s.mux

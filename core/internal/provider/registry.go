@@ -104,9 +104,18 @@ func (r *Registry) Register(c model.ProviderConfig) error {
 			// Vision through the multimodal chat endpoint — usually the same
 			// model that is already resident (ADR-036).
 			r.vision[c.ID] = NewOpenAIVision(c, apiKey)
+		case model.KindTTS:
+			// /audio/speech: OpenAI, and compatible local servers (Kokoro-FastAPI,
+			// openedai-speech) that speak the same protocol.
+			r.tts[c.ID] = NewCloudTTS(c, apiKey)
 		default:
 			return ErrUnsupported
 		}
+	case "elevenlabs", "azure":
+		if c.Kind != model.KindTTS {
+			return ErrUnsupported
+		}
+		r.tts[c.ID] = NewCloudTTS(c, apiKey)
 	case "worker":
 		w := NewWorkerClient(c)
 		switch c.Kind {

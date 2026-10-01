@@ -39,6 +39,9 @@ type ServerConfig struct {
 	RequireTLSForRemote bool   `json:"require_tls_for_remote"`
 	TLSCertFile         string `json:"tls_cert_file,omitempty"`
 	TLSKeyFile          string `json:"tls_key_file,omitempty"`
+	// AllowedOrigins adds browser origins (beyond the Tauri shell and the
+	// Vite dev server) that may read core responses, e.g. a custom stage host.
+	AllowedOrigins []string `json:"allowed_origins,omitempty"`
 }
 
 type DatabaseConfig struct {

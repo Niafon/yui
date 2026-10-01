@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="color-scheme" content="dark light" />
-    <title>Yui</title>
+    <title data-i18n="app.title">Yui</title>
     <link rel="stylesheet" href="/src/styles.css" />
   </head>
   <body class="view-main">
@@ -40,259 +40,264 @@
       <header class="top">
         <div class="brand">
           <span class="brand__mark" aria-hidden="true">Y</span>
-          <h1 class="brand__name" id="identity-name">Yui</h1>
-          <span class="status" id="state-chip" title="Состояние">
+          <h1 class="brand__name" id="identity-name" data-i18n="app.title">Yui</h1>
+          <span class="status" id="state-chip" title="Состояние" data-i18n-title="app.state">
             <span id="state-dot" class="dot" data-state="idle"></span>
             <span id="state-label">не в сессии</span>
           </span>
         </div>
         <div class="top__actions">
-          <span id="bar-privacy" class="tag tag--local" title="Куда могут уходить данные">только локально</span>
-          <button id="new-chat" class="icon-button" type="button" title="Новый разговор" aria-label="Новый разговор" disabled><svg><use href="#i-new"/></svg></button>
-          <button id="detach-avatar" class="icon-button view-main-only" type="button" title="Аватар в отдельном окне" aria-label="Аватар в отдельном окне"><svg><use href="#i-person"/></svg></button>
-          <button id="detach-chat" class="icon-button view-main-only" type="button" title="Чат в отдельном окне" aria-label="Чат в отдельном окне"><svg><use href="#i-popout"/></svg></button>
-          <button id="open-settings" class="icon-button" type="button" title="Настройки" aria-label="Настройки"><svg><use href="#i-gear"/></svg></button>
+          <span id="bar-privacy" class="tag tag--local" title="Куда могут уходить данные" data-i18n-title="app.privacy">только локально</span>
+          <button id="new-chat" class="icon-button" type="button" title="Новый разговор" data-i18n-title="app.newChat" aria-label="Новый разговор" disabled><svg><use href="#i-new"/></svg></button>
+          <button id="detach-avatar" class="icon-button view-main-only" type="button" title="Аватар в отдельном окне" data-i18n-title="app.detachAvatar" aria-label="Аватар в отдельном окне"><svg><use href="#i-person"/></svg></button>
+          <button id="detach-chat" class="icon-button view-main-only" type="button" title="Чат в отдельном окне" data-i18n-title="app.detachChat" aria-label="Чат в отдельном окне"><svg><use href="#i-popout"/></svg></button>
+          <button id="open-settings" class="icon-button" type="button" title="Настройки" data-i18n-title="app.settings" aria-label="Настройки"><svg><use href="#i-gear"/></svg></button>
           <button id="connect" class="button button--primary button--small" type="button">Подключиться</button>
         </div>
       </header>
 
       <main class="workspace" aria-live="polite">
-        <section class="stage view-main-only" id="stage" aria-label="Аватар">
+        <section class="stage view-main-only" id="stage" aria-label="Аватар" data-i18n-aria="tab.avatar">
           <div class="stage__frame" id="stage-frame">
-            <canvas id="live2d" class="stage__canvas" width="720" height="900" aria-label="Аватар Юи"></canvas>
+            <canvas id="live2d" class="stage__canvas" width="720" height="900" aria-label="Аватар Юи" data-i18n-aria="app.avatarLabel"></canvas>
             <p id="figure-fallback" class="stage__fallback" role="status">Загрузка аватара…</p>
             <span id="emotion-label" class="stage__emotion" hidden></span>
-            <button id="stage-audio" class="stage__audio" type="button" hidden>Включить звук</button>
+            <button id="stage-audio" class="stage__audio" type="button" hidden data-i18n="app.enableSound">Включить звук</button>
             <canvas id="presence" class="presence" width="1200" height="72" aria-hidden="true"></canvas>
           </div>
           <div class="detached-note" id="stage-detached" hidden>
-            <p>Аватар открыт в отдельном окне.</p>
-            <button id="attach-avatar" class="button button--small" type="button">Вернуть сюда</button>
+            <p data-i18n="app.avatarDetached">Аватар открыт в отдельном окне.</p>
+            <button id="attach-avatar" class="button button--small" type="button" data-i18n="app.returnHere">Вернуть сюда</button>
           </div>
         </section>
 
-        <section class="chat" aria-label="Диалог">
+        <section class="chat" aria-label="Диалог" data-i18n-aria="app.dialogue">
           <ol id="transcript" class="transcript">
             <li id="transcript-empty" class="transcript__empty">
               <span class="transcript__glyph" aria-hidden="true"><svg><use href="#i-sparkle"/></svg></span>
-              <strong>Разговор начинается здесь</strong>
-              <span>Подключитесь и напишите Юи или включите микрофон.</span>
+              <strong data-i18n="chat.emptyTitle">Разговор начинается здесь</strong>
+              <span data-i18n="chat.emptyText">Подключитесь и напишите Юи или включите микрофон.</span>
             </li>
           </ol>
           <div class="chat__status"><span id="sensor-state" role="status">Микрофон выключен</span></div>
           <form id="composer" class="composer">
-            <label class="icon-button composer__tool" title="Отправить фото" aria-label="Отправить фото">
+            <label class="icon-button composer__tool" title="Отправить фото" data-i18n-title="chat.photo" aria-label="Отправить фото">
               <svg><use href="#i-image"/></svg>
               <input id="camera" type="file" accept="image/*" hidden disabled />
             </label>
             <textarea id="composer-input" class="composer__input" rows="1"
-                      placeholder="Напишите Юи…" aria-label="Сообщение Юи" autocomplete="off"></textarea>
-            <button id="microphone" class="icon-button composer__tool" type="button" title="Говорить" aria-label="Говорить" aria-pressed="false" disabled><svg><use href="#i-mic"/></svg></button>
-            <button id="stop-turn" class="icon-button composer__tool" type="button" title="Прервать ответ (Esc)" aria-label="Прервать ответ" disabled><svg><use href="#i-stop"/></svg></button>
-            <button id="send-message" class="icon-button icon-button--accent" type="submit" title="Отправить" aria-label="Отправить" disabled><svg><use href="#i-send"/></svg></button>
+                      placeholder="Напишите Юи…" data-i18n-placeholder="chat.placeholder" aria-label="Сообщение Юи" data-i18n-aria="chat.inputLabel" autocomplete="off"></textarea>
+            <button id="microphone" class="icon-button composer__tool" type="button" title="Говорить" data-i18n-title="chat.speak" aria-label="Говорить" aria-pressed="false" disabled><svg><use href="#i-mic"/></svg></button>
+            <button id="stop-turn" class="icon-button composer__tool" type="button" title="Прервать ответ (Esc)" data-i18n-title="chat.stop" aria-label="Прервать ответ" disabled><svg><use href="#i-stop"/></svg></button>
+            <button id="send-message" class="icon-button icon-button--accent" type="submit" title="Отправить" data-i18n-title="chat.send" aria-label="Отправить" disabled><svg><use href="#i-send"/></svg></button>
           </form>
         </section>
         <div class="detached-note" id="chat-detached-note" hidden>
-          <p>Чат открыт в отдельном окне.</p>
-          <button id="attach-chat" class="button button--small" type="button">Вернуть сюда</button>
+          <p data-i18n="app.chatDetached">Чат открыт в отдельном окне.</p>
+          <button id="attach-chat" class="button button--small" type="button" data-i18n="app.returnHere">Вернуть сюда</button>
         </div>
       </main>
     </div>
 
     <dialog id="settings" class="settings" aria-labelledby="settings-title">
       <div class="settings__shell">
-        <nav class="settings__nav" aria-label="Разделы настроек">
-          <h2 id="settings-title" class="settings__title">Настройки</h2>
+        <nav class="settings__nav" aria-label="Разделы настроек" data-i18n-aria="settings.sections">
+          <h2 id="settings-title" class="settings__title" data-i18n="app.settings">Настройки</h2>
           <div class="settings__tabs" role="tablist" aria-orientation="vertical">
-            <button class="tab tab--on" role="tab" data-tab="character" aria-selected="true" id="tab-character"><svg><use href="#i-sparkle"/></svg><span>Персонаж</span></button>
-            <button class="tab" role="tab" data-tab="avatar" aria-selected="false" id="tab-avatar"><svg><use href="#i-person"/></svg><span>Аватар</span></button>
-            <button class="tab" role="tab" data-tab="voice" aria-selected="false" id="tab-voice"><svg><use href="#i-voice"/></svg><span>Голос и микрофон</span></button>
-            <button class="tab" role="tab" data-tab="models" aria-selected="false" id="tab-models"><svg><use href="#i-layers"/></svg><span>Модели</span></button>
-            <button class="tab" role="tab" data-tab="inference" aria-selected="false" id="tab-inference"><svg><use href="#i-cpu"/></svg><span>AI Runtime</span></button>
-            <button class="tab" role="tab" data-tab="memory" aria-selected="false" id="tab-memory"><svg><use href="#i-brain"/></svg><span>Память</span></button>
-            <button class="tab" role="tab" data-tab="ledger" aria-selected="false" id="tab-ledger"><svg><use href="#i-shield"/></svg><span>Приватность</span></button>
-            <button class="tab" role="tab" data-tab="devices" aria-selected="false" id="tab-devices"><svg><use href="#i-phone"/></svg><span>Устройства</span></button>
-            <button class="tab" role="tab" data-tab="interface" aria-selected="false" id="tab-interface"><svg><use href="#i-palette"/></svg><span>Интерфейс</span></button>
+            <button class="tab tab--on" role="tab" data-tab="character" aria-selected="true" id="tab-character"><svg><use href="#i-sparkle"/></svg><span data-i18n="tab.character">Персонаж</span></button>
+            <button class="tab" role="tab" data-tab="avatar" aria-selected="false" id="tab-avatar"><svg><use href="#i-person"/></svg><span data-i18n="tab.avatar">Аватар</span></button>
+            <button class="tab" role="tab" data-tab="voice" aria-selected="false" id="tab-voice"><svg><use href="#i-voice"/></svg><span data-i18n="tab.voice">Голос и микрофон</span></button>
+            <button class="tab" role="tab" data-tab="models" aria-selected="false" id="tab-models"><svg><use href="#i-layers"/></svg><span data-i18n="tab.models">Модели</span></button>
+            <button class="tab" role="tab" data-tab="inference" aria-selected="false" id="tab-inference"><svg><use href="#i-cpu"/></svg><span data-i18n="tab.inference">AI Runtime</span></button>
+            <button class="tab" role="tab" data-tab="memory" aria-selected="false" id="tab-memory"><svg><use href="#i-brain"/></svg><span data-i18n="tab.memory">Память</span></button>
+            <button class="tab" role="tab" data-tab="ledger" aria-selected="false" id="tab-ledger"><svg><use href="#i-shield"/></svg><span data-i18n="tab.ledger">Приватность</span></button>
+            <button class="tab" role="tab" data-tab="devices" aria-selected="false" id="tab-devices"><svg><use href="#i-phone"/></svg><span data-i18n="tab.devices">Устройства</span></button>
+            <button class="tab" role="tab" data-tab="interface" aria-selected="false" id="tab-interface"><svg><use href="#i-palette"/></svg><span data-i18n="tab.interface">Интерфейс</span></button>
           </div>
         </nav>
         <div class="settings__body">
-          <button id="settings-close" class="icon-button settings__close" type="button" aria-label="Закрыть настройки"><svg><use href="#i-close"/></svg></button>
+          <button id="settings-close" class="icon-button settings__close" type="button" aria-label="Закрыть настройки" data-i18n-aria="settings.close"><svg><use href="#i-close"/></svg></button>
 
           <section id="panel-character" class="pane" role="tabpanel" aria-labelledby="tab-character">
-            <header class="pane__head"><h3>Персонаж</h3><p>Имя, манера речи и характер Юи. Хранятся в ядре и действуют на всех устройствах.</p></header>
+            <header class="pane__head"><h3 data-i18n="tab.character">Персонаж</h3><p data-i18n="character.intro">Имя, манера речи и характер Юи. Хранятся в ядре и действуют на всех устройствах.</p></header>
             <form id="character-form" class="form-grid">
-              <label class="field"><span class="field__label">Имя</span><input id="character-name" class="field__control" maxlength="40" required /></label>
-              <label class="field"><span class="field__label">Режим разговора</span>
+              <label class="field"><span class="field__label" data-i18n="character.name">Имя</span><input id="character-name" class="field__control" maxlength="40" required /></label>
+              <label class="field"><span class="field__label" data-i18n="character.mode">Режим разговора</span>
                 <select id="character-mode" class="field__control">
-                  <option value="normal">Обычный</option><option value="playful">Игривый</option><option value="support">Поддержка</option>
-                  <option value="work">Работа</option><option value="learning">Обучение</option><option value="brief">Кратко</option>
-                  <option value="night">Ночной</option><option value="public">На людях</option><option value="silent">Без голоса</option>
+                  <option value="normal" data-i18n="mode.normal">Обычный</option><option value="playful" data-i18n="mode.playful">Игривый</option><option value="support" data-i18n="mode.support">Поддержка</option>
+                  <option value="work" data-i18n="mode.work">Работа</option><option value="learning" data-i18n="mode.learning">Обучение</option><option value="brief" data-i18n="mode.brief">Кратко</option>
+                  <option value="night" data-i18n="mode.night">Ночной</option><option value="public" data-i18n="mode.public">На людях</option><option value="silent" data-i18n="mode.silent">Без голоса</option>
                 </select>
               </label>
-              <label class="field field--wide"><span class="field__label">Манера речи</span>
-                <textarea id="character-style" class="field__control" rows="3" maxlength="600" placeholder="Например: тёплая, с мягким юмором, отвечает коротко"></textarea></label>
-              <label class="field field--wide"><span class="field__label">Отношения</span>
-                <input id="character-relationship" class="field__control" maxlength="120" placeholder="Например: близкий друг" /></label>
-              <label class="field"><span class="field__label">Голос (профиль TTS)</span><input id="character-voice" class="field__control" maxlength="80" placeholder="xenia" /></label>
-              <label class="field"><span class="field__label">Инициативность <output id="character-initiative-value"></output></span>
+              <label class="field field--wide"><span class="field__label" data-i18n="character.style">Манера речи</span>
+                <textarea id="character-style" class="field__control" rows="3" maxlength="600" placeholder="Например: тёплая, с мягким юмором, отвечает коротко" data-i18n-placeholder="character.stylePlaceholder"></textarea></label>
+              <label class="field field--wide"><span class="field__label" data-i18n="character.relationship">Отношения</span>
+                <input id="character-relationship" class="field__control" maxlength="120" placeholder="Например: близкий друг" data-i18n-placeholder="character.relationshipPlaceholder" /></label>
+              <label class="field"><span class="field__label" data-i18n="character.voice">Голос (профиль TTS)</span><input id="character-voice" class="field__control" maxlength="80" placeholder="xenia" /></label>
+              <label class="field"><span class="field__label"><span data-i18n="character.initiative">Инициативность</span> <output id="character-initiative-value"></output></span>
                 <input id="character-initiative" type="range" min="0" max="1" step="0.05" /></label>
               <div id="character-traits" class="traits field--wide"></div>
               <div class="row field--wide">
-                <label class="button button--small">Импорт карточки (SillyTavern .png/.json)<input id="character-card" type="file" accept=".png,.json,application/json,image/png" hidden /></label>
-                <span class="hint">Поля заполнятся из карточки; проверьте их и нажмите «Сохранить».</span>
+                <label class="button button--small"><span data-i18n="character.card">Импорт карточки (SillyTavern .png/.json)</span><input id="character-card" type="file" accept=".png,.json,application/json,image/png" hidden /></label>
+                <span class="hint" data-i18n="character.cardHint">Поля заполнятся из карточки; проверьте их и нажмите «Сохранить».</span>
               </div>
               <div class="form-actions field--wide">
                 <p id="character-status" class="hint" role="status">Подключите ядро, чтобы изменить персонажа.</p>
-                <button id="character-save" class="button button--primary" type="submit" disabled>Сохранить</button>
+                <button id="character-save" class="button button--primary" type="submit" disabled data-i18n="character.save">Сохранить</button>
               </div>
             </form>
           </section>
 
           <section id="panel-avatar" class="pane pane--hidden" role="tabpanel" aria-labelledby="tab-avatar">
-            <header class="pane__head"><h3>Аватар</h3><p>Модель, кадрирование и живость движений. Свои модели хранятся только в этом браузере.</p></header>
-            <div id="avatar-grid" class="avatar-grid" role="radiogroup" aria-label="Модель аватара"></div>
+            <header class="pane__head"><h3 data-i18n="tab.avatar">Аватар</h3><p data-i18n="avatar.intro">Модель, кадрирование и живость движений. Свои модели хранятся только в этом браузере.</p></header>
+            <div id="avatar-grid" class="avatar-grid" role="radiogroup" aria-label="Модель аватара" data-i18n-aria="avatar.models"></div>
             <div class="row">
-              <label class="button button--small">Импорт .vrm или Live2D .zip<input id="avatar-import" type="file" accept=".vrm,.zip" hidden /></label>
+              <label class="button button--small"><span data-i18n="avatar.import">Импорт .vrm или Live2D .zip</span><input id="avatar-import" type="file" accept=".vrm,.zip" hidden /></label>
               <span id="avatar-import-status" class="hint" role="status"></span>
             </div>
             <div class="form-grid">
-              <label class="field"><span class="field__label">Масштаб <output id="avatar-scale-value"></output></span><input id="avatar-scale" type="range" min="0.6" max="2.2" step="0.05" /></label>
-              <label class="field"><span class="field__label">Высота кадра <output id="avatar-offset-value"></output></span><input id="avatar-offset" type="range" min="-0.6" max="0.6" step="0.02" /></label>
-              <label class="field"><span class="field__label">Живость движений <output id="avatar-motion-value"></output></span><input id="avatar-motion" type="range" min="0" max="1.5" step="0.05" /></label>
-              <label class="field"><span class="field__label">Фон сцены</span>
-                <select id="avatar-backdrop" class="field__control"><option value="aurora">Мягкое свечение</option><option value="plain">Однотонный</option><option value="transparent">Прозрачный</option></select></label>
-              <label class="check"><input id="avatar-follow" type="checkbox" /><span>Взгляд следит за курсором</span></label>
-              <label class="check"><input id="avatar-ontop" type="checkbox" /><span>Отдельное окно поверх других</span></label>
+              <label class="field"><span class="field__label"><span data-i18n="avatar.scale">Масштаб</span> <output id="avatar-scale-value"></output></span><input id="avatar-scale" type="range" min="0.6" max="2.2" step="0.05" /></label>
+              <label class="field"><span class="field__label"><span data-i18n="avatar.offset">Высота кадра</span> <output id="avatar-offset-value"></output></span><input id="avatar-offset" type="range" min="-0.6" max="0.6" step="0.02" /></label>
+              <label class="field"><span class="field__label"><span data-i18n="avatar.motion">Живость движений</span> <output id="avatar-motion-value"></output></span><input id="avatar-motion" type="range" min="0" max="1.5" step="0.05" /></label>
+              <label class="field"><span class="field__label" data-i18n="avatar.backdrop">Фон сцены</span>
+                <select id="avatar-backdrop" class="field__control"><option value="aurora" data-i18n="backdrop.aurora">Мягкое свечение</option><option value="plain" data-i18n="backdrop.plain">Однотонный</option><option value="transparent" data-i18n="backdrop.transparent">Прозрачный</option></select></label>
+              <label class="check"><input id="avatar-follow" type="checkbox" /><span data-i18n="avatar.follow">Взгляд следит за курсором</span></label>
+              <label class="check"><input id="avatar-ontop" type="checkbox" /><span data-i18n="avatar.onTop">Отдельное окно поверх других</span></label>
             </div>
-            <div class="row"><button id="avatar-detach" class="button" type="button"><svg><use href="#i-popout"/></svg>Открыть аватар в отдельном окне</button></div>
+            <div class="row"><button id="avatar-detach" class="button" type="button"><svg><use href="#i-popout"/></svg><span data-i18n="avatar.detach">Открыть аватар в отдельном окне</span></button></div>
           </section>
 
           <section id="panel-voice" class="pane pane--hidden" role="tabpanel" aria-labelledby="tab-voice">
-            <header class="pane__head"><h3>Голос и микрофон</h3><p>Воспроизведение, синхронизация губ и способ разговора голосом.</p></header>
-            <h4 class="pane__sub">Голос Юи</h4>
+            <header class="pane__head"><h3 data-i18n="tab.voice">Голос и микрофон</h3><p data-i18n="voice.intro">Воспроизведение, синхронизация губ и способ разговора голосом.</p></header>
+            <h4 class="pane__sub" data-i18n="voice.output">Голос Юи</h4>
             <div class="form-grid">
-              <label class="field"><span class="field__label">Громкость <output id="voice-volume-value"></output></span><input id="voice-volume" type="range" min="0" max="1" step="0.05" /></label>
-              <label class="field"><span class="field__label">Чувствительность губ <output id="lip-sensitivity-value"></output></span><input id="lip-sensitivity" type="range" min="0.5" max="2" step="0.05" /></label>
-              <label class="field"><span class="field__label">Синхронизация губ</span>
-                <select id="lip-engine" class="field__control"><option value="auto">Гласные (MFCC, точнее)</option><option value="spectral">Спектр (легче)</option></select></label>
-              <div class="field"><span class="field__label">Сейчас работает</span><strong id="lip-engine-active" class="field__value">—</strong></div>
+              <label class="field"><span class="field__label"><span data-i18n="voice.volume">Громкость</span> <output id="voice-volume-value"></output></span><input id="voice-volume" type="range" min="0" max="1" step="0.05" /></label>
+              <label class="field"><span class="field__label"><span data-i18n="voice.lipSensitivity">Чувствительность губ</span> <output id="lip-sensitivity-value"></output></span><input id="lip-sensitivity" type="range" min="0.5" max="2" step="0.05" /></label>
+              <label class="field"><span class="field__label" data-i18n="voice.lipEngine">Синхронизация губ</span>
+                <select id="lip-engine" class="field__control"><option value="auto" data-i18n="lip.auto">Гласные (MFCC, точнее)</option><option value="spectral" data-i18n="lip.spectral">Спектр (легче)</option></select></label>
+              <div class="field"><span class="field__label" data-i18n="voice.lipActive">Сейчас работает</span><strong id="lip-engine-active" class="field__value">—</strong></div>
             </div>
-            <div class="row"><button id="voice-preview" class="button" type="button"><svg><use href="#i-voice"/></svg>Проба голоса</button></div>
-            <h4 class="pane__sub">Микрофон</h4>
+            <div class="row"><button id="voice-preview" class="button" type="button"><svg><use href="#i-voice"/></svg><span data-i18n="voice.preview">Проба голоса</span></button></div>
+            <h4 class="pane__sub" data-i18n="voice.mic">Микрофон</h4>
             <div class="form-grid">
-              <label class="field"><span class="field__label">Режим</span>
-                <select id="mic-mode" class="field__control"><option value="push">Нажми и говори</option><option value="handsfree">Свободный разговор (VAD)</option></select></label>
-              <label class="field"><span class="field__label">Чувствительность VAD <output id="vad-sensitivity-value"></output></span><input id="vad-sensitivity" type="range" min="0.4" max="2.5" step="0.05" /></label>
-              <label class="check field--wide"><input id="barge-in" type="checkbox" /><span>Перебивать Юи голосом (нужно эхоподавление; ядро решает, разрешено ли)</span></label>
+              <label class="field"><span class="field__label" data-i18n="voice.micMode">Режим</span>
+                <select id="mic-mode" class="field__control"><option value="push" data-i18n="micMode.push">Нажми и говори</option><option value="handsfree" data-i18n="micMode.handsfree">Свободный разговор (VAD)</option></select></label>
+              <label class="field"><span class="field__label" data-i18n="voice.vadEngine">Определение речи</span>
+                <select id="vad-engine" class="field__control"><option value="silero" data-i18n="vad.silero">Нейросеть Silero (точнее)</option><option value="energy" data-i18n="vad.energy">По громкости (легче)</option></select></label>
+              <label class="field"><span class="field__label"><span data-i18n="voice.vadSensitivity">Чувствительность VAD</span> <output id="vad-sensitivity-value"></output></span><input id="vad-sensitivity" type="range" min="0.4" max="2.5" step="0.05" /></label>
+              <label class="check field--wide"><input id="barge-in" type="checkbox" /><span data-i18n="voice.bargeIn">Перебивать Юи голосом (нужно эхоподавление; ядро решает, разрешено ли)</span></label>
             </div>
+            <div class="note desktop-only" id="hotkeys-note"><strong data-i18n="voice.hotkeys">Горячие клавиши (приложение для ПК)</strong><br><span data-i18n="voice.hotkeysText">Ctrl+Shift+Space — микрофон из любой программы · Ctrl+Shift+A — показать/скрыть аватар · Ctrl+Shift+Y — клики сквозь аватар</span></div>
           </section>
 
           <section id="panel-models" class="pane pane--hidden models-pane" role="tabpanel" aria-labelledby="tab-models">
             <header class="pane__head pane__head--row">
-              <div><h3>Модели</h3><p>Модель для диалога, голоса и других задач.</p></div>
-              <button id="model-add-open" class="button button--primary button--small" type="button" disabled><svg><use href="#i-plus"/></svg>Добавить</button>
+              <div><h3 data-i18n="tab.models">Модели</h3><p data-i18n="models.intro">Модель для диалога, голоса и других задач.</p></div>
+              <button id="model-add-open" class="button button--primary button--small" type="button" disabled><svg><use href="#i-plus"/></svg><span data-i18n="models.add">Добавить</span></button>
             </header>
             <div class="models-filters">
-              <div class="segmented" role="group" aria-label="Источник моделей">
-                <button class="segmented__button models-source__button models-source__button--on" type="button" data-model-source="all" aria-pressed="true">Все</button>
-                <button class="segmented__button models-source__button" type="button" data-model-source="local" aria-pressed="false">Локальные</button>
-                <button class="segmented__button models-source__button" type="button" data-model-source="provider" aria-pressed="false">Провайдеры</button>
+              <div class="segmented" role="group" aria-label="Источник моделей" data-i18n-aria="models.source">
+                <button class="segmented__button models-source__button models-source__button--on" type="button" data-model-source="all" aria-pressed="true" data-i18n="models.all">Все</button>
+                <button class="segmented__button models-source__button" type="button" data-model-source="local" aria-pressed="false" data-i18n="models.local">Локальные</button>
+                <button class="segmented__button models-source__button" type="button" data-model-source="provider" aria-pressed="false" data-i18n="models.providers">Провайдеры</button>
               </div>
-              <label class="field"><span class="field__label">Назначение</span>
+              <label class="field"><span class="field__label" data-i18n="models.purpose">Назначение</span>
                 <select id="model-kind-filter" class="field__control">
-                  <option value="llm">Диалог</option><option value="stt">Распознавание речи</option><option value="tts">Голос</option>
-                  <option value="vision">Зрение</option><option value="embeddings">Память</option>
+                  <option value="llm" data-i18n="kind.llm">Диалог</option><option value="stt" data-i18n="kind.stt">Распознавание речи</option><option value="tts" data-i18n="kind.tts">Голос</option>
+                  <option value="vision" data-i18n="kind.vision">Зрение</option><option value="embeddings" data-i18n="tab.memory">Память</option>
                 </select></label>
-              <label class="field"><span class="field__label">Провайдер</span>
-                <select id="model-provider-filter" class="field__control"><option value="">Все провайдеры</option></select></label>
-              <label class="field models-search"><span class="field__label">Найти</span>
-                <input id="model-search" class="field__control" type="search" placeholder="Название или ID" /></label>
+              <label class="field"><span class="field__label" data-i18n="models.provider">Провайдер</span>
+                <select id="model-provider-filter" class="field__control"><option value="" data-i18n="models.allProviders">Все провайдеры</option></select></label>
+              <label class="field models-search"><span class="field__label" data-i18n="models.search">Найти</span>
+                <input id="model-search" class="field__control" type="search" placeholder="Название или ID" data-i18n-placeholder="models.searchPlaceholder" /></label>
             </div>
             <p id="models-status" class="hint" role="status">Подключите ядро, чтобы увидеть модели.</p>
             <div class="models-layout">
-              <div id="models-list" class="models-list" aria-label="Доступные модели"></div>
-              <aside id="models-detail" class="models-detail" aria-label="Сведения о модели"><p>Выберите модель из списка.</p></aside>
+              <div id="models-list" class="models-list" aria-label="Доступные модели" data-i18n-aria="models.available"></div>
+              <aside id="models-detail" class="models-detail" aria-label="Сведения о модели" data-i18n-aria="models.details"><p data-i18n="models.pick">Выберите модель из списка, чтобы увидеть её параметры.</p></aside>
             </div>
           </section>
 
           <section id="panel-inference" class="pane pane--hidden" role="tabpanel" aria-labelledby="tab-inference">
-            <header class="pane__head"><h3>AI Runtime</h3><p>Как ядро выбирает модель под нагрузку компьютера.</p></header>
+            <header class="pane__head"><h3 data-i18n="tab.inference">AI Runtime</h3><p data-i18n="runtime.intro">Как ядро выбирает модель под нагрузку компьютера.</p></header>
             <div class="form-grid">
-              <label class="field"><span class="field__label">Режим</span>
+              <label class="field"><span class="field__label" data-i18n="voice.micMode">Режим</span>
                 <select id="inference-mode" class="field__control">
-                  <option value="auto">Авто</option><option value="max_quality">Максимальное качество</option><option value="balanced">Баланс</option>
-                  <option value="gaming">Игровой</option><option value="manual">Вручную</option>
+                  <option value="auto" data-i18n="runtimeMode.auto">Авто</option><option value="max_quality" data-i18n="runtimeMode.max">Максимальное качество</option><option value="balanced" data-i18n="runtimeMode.balanced">Баланс</option>
+                  <option value="gaming" data-i18n="runtimeMode.gaming">Игровой</option><option value="manual" data-i18n="runtimeMode.manual">Вручную</option>
                 </select></label>
-              <label class="field"><span class="field__label">Закрепить модель</span>
-                <select id="inference-model" class="field__control"><option value="">Автовыбор</option></select></label>
-              <label class="field"><span class="field__label">Минимальное качество</span>
+              <label class="field"><span class="field__label" data-i18n="runtime.lock">Закрепить модель</span>
+                <select id="inference-model" class="field__control"><option value="" data-i18n="runtime.autoPick">Автовыбор</option></select></label>
+              <label class="field"><span class="field__label" data-i18n="runtime.minQuality">Минимальное качество</span>
                 <input id="inference-quality" class="field__control" type="number" min="1" max="100" value="55" /></label>
-              <label class="check"><input id="inference-downgrade" type="checkbox" checked /><span>Разрешить понижать модель</span></label>
+              <label class="check"><input id="inference-downgrade" type="checkbox" checked /><span data-i18n="runtime.downgrade">Разрешить понижать модель</span></label>
             </div>
             <div class="runtime-grid">
-              <div><span>Рабочая LLM</span><strong id="runtime-model">—</strong></div>
+              <div><span data-i18n="runtime.model">Рабочая LLM</span><strong id="runtime-model">—</strong></div>
               <div><span>Backend</span><strong id="runtime-backend">—</strong></div>
               <div><span>CPU</span><strong id="runtime-cpu">—</strong></div>
               <div><span>GPU</span><strong id="runtime-gpu">—</strong></div>
               <div><span>RAM</span><strong id="runtime-ram">—</strong></div>
               <div><span>VRAM</span><strong id="runtime-vram">—</strong></div>
-              <div><span>Игра</span><strong id="runtime-game">—</strong></div>
+              <div><span data-i18n="runtime.game">Игра</span><strong id="runtime-game">—</strong></div>
               <div><span>FPS</span><strong id="runtime-fps">—</strong></div>
             </div>
             <p id="runtime-reason" class="note">Решение ещё не принималось.</p>
           </section>
 
           <section id="panel-memory" class="pane pane--hidden" role="tabpanel" aria-labelledby="tab-memory">
-            <header class="pane__head"><h3>Память</h3><p>Что Юи запомнила. Закрепите важное, подтвердите спорное или удалите лишнее.</p></header>
+            <header class="pane__head"><h3 data-i18n="tab.memory">Память</h3><p data-i18n="memory.intro">Что Юи запомнила. Закрепите важное, подтвердите спорное или удалите лишнее.</p></header>
             <form id="memory-add" class="row">
-              <input id="memory-add-text" class="field__control memory-add__input" maxlength="500" placeholder="Запомнить вручную: например, «я пью чай без сахара»" disabled />
-              <button id="memory-add-submit" class="button button--small" type="submit" disabled><svg><use href="#i-plus"/></svg>Запомнить</button>
+              <input id="memory-add-text" class="field__control memory-add__input" maxlength="500" placeholder="Запомнить вручную: например, «я пью чай без сахара»" data-i18n-placeholder="memory.addPlaceholder" disabled />
+              <button id="memory-add-submit" class="button button--small" type="submit" disabled><svg><use href="#i-plus"/></svg><span data-i18n="memory.add">Запомнить</span></button>
             </form>
             <p class="empty" id="memory-empty">Новых воспоминаний пока нет.</p>
             <ul id="memory-list" class="memory"></ul>
           </section>
 
           <section id="panel-ledger" class="pane pane--hidden" role="tabpanel" aria-labelledby="tab-ledger">
-            <header class="pane__head"><h3>Приватность</h3><p>Какие категории данных уходили к моделям и какие разрешения действуют.</p></header>
-            <h4 class="pane__sub">Постоянные разрешения</h4>
+            <header class="pane__head"><h3 data-i18n="tab.ledger">Приватность</h3><p data-i18n="privacy.intro">Какие категории данных уходили к моделям и какие разрешения действуют.</p></header>
+            <h4 class="pane__sub" data-i18n="privacy.grants">Постоянные разрешения</h4>
             <p class="empty" id="grants-empty">Постоянных разрешений нет.</p>
             <ul id="grants-list" class="ledger"></ul>
-            <h4 class="pane__sub">Журнал передачи данных</h4>
+            <h4 class="pane__sub" data-i18n="privacy.log">Журнал передачи данных</h4>
             <p class="empty" id="ledger-empty">Вызовов модели пока нет.</p>
             <ul id="ledger-list" class="ledger"></ul>
           </section>
 
           <section id="panel-devices" class="pane pane--hidden" role="tabpanel" aria-labelledby="tab-devices">
             <header class="pane__head pane__head--row">
-              <div><h3>Устройства</h3><p>Телефоны и браузеры, подключённые к этому компьютеру.</p></div>
-              <button id="pair-device" class="button button--primary button--small" type="button"><svg><use href="#i-plus"/></svg>Подключить телефон</button>
+              <div><h3 data-i18n="tab.devices">Устройства</h3><p data-i18n="devices.intro">Телефоны и браузеры, подключённые к этому компьютеру.</p></div>
+              <button id="pair-device" class="button button--primary button--small" type="button"><svg><use href="#i-plus"/></svg><span data-i18n="devices.pair">Подключить телефон</span></button>
             </header>
             <p class="empty" id="devices-empty">Подключите ядро, чтобы увидеть устройства.</p>
             <ul id="devices-list" class="ledger"></ul>
           </section>
 
           <section id="panel-interface" class="pane pane--hidden" role="tabpanel" aria-labelledby="tab-interface">
-            <header class="pane__head"><h3>Интерфейс</h3><p>Оформление и поведение этого окна.</p></header>
+            <header class="pane__head"><h3 data-i18n="tab.interface">Интерфейс</h3><p data-i18n="ui.intro">Оформление и поведение этого окна.</p></header>
             <div class="form-grid">
-              <label class="field"><span class="field__label">Тема</span>
-                <select id="ui-theme" class="field__control"><option value="system">Как в системе</option><option value="dark">Тёмная</option><option value="light">Светлая</option></select></label>
-              <div class="field"><span class="field__label">Акцент</span><div id="ui-accents" class="swatches" role="radiogroup" aria-label="Цвет акцента"></div></div>
-              <label class="check"><input id="ui-enter" type="checkbox" /><span>Enter отправляет, Shift+Enter — новая строка</span></label>
-              <label class="check"><input id="ui-ribbon" type="checkbox" /><span>Показывать волну активности</span></label>
+              <label class="field"><span class="field__label" data-i18n="ui.language">Язык интерфейса</span>
+                <select id="ui-lang" class="field__control"><option value="auto" data-i18n="lang.auto">Как в системе</option><option value="ru">Русский</option><option value="en">English</option></select></label>
+              <label class="field"><span class="field__label" data-i18n="ui.theme">Тема</span>
+                <select id="ui-theme" class="field__control"><option value="system" data-i18n="lang.auto">Как в системе</option><option value="dark" data-i18n="theme.dark">Тёмная</option><option value="light" data-i18n="theme.light">Светлая</option></select></label>
+              <div class="field"><span class="field__label" data-i18n="ui.accent">Акцент</span><div id="ui-accents" class="swatches" role="radiogroup" aria-label="Цвет акцента" data-i18n-aria="ui.accent"></div></div>
+              <label class="check"><input id="ui-enter" type="checkbox" /><span data-i18n="ui.enter">Enter отправляет, Shift+Enter — новая строка</span></label>
+              <label class="check"><input id="ui-ribbon" type="checkbox" /><span data-i18n="ui.ribbon">Показывать волну активности</span></label>
             </div>
-            <h4 class="pane__sub">Соединение</h4>
+            <h4 class="pane__sub" data-i18n="ui.connection">Соединение</h4>
             <div class="runtime-grid">
-              <div><span>Ядро</span><strong id="bar-core">не подключено</strong></div>
+              <div><span data-i18n="ui.core">Ядро</span><strong id="bar-core">не подключено</strong></div>
               <div><span>LLM</span><strong id="bar-llm">—</strong></div>
               <div><span>STT</span><strong id="bar-stt">—</strong></div>
               <div><span>TTS</span><strong id="bar-tts">—</strong></div>
               <div class="runtime-grid__wide"><span>AI</span><strong id="bar-runtime">—</strong></div>
             </div>
             <div class="form-grid">
-              <label class="field field--wide"><span class="field__label">Адрес ядра</span>
+              <label class="field field--wide"><span class="field__label" data-i18n="ui.coreAddress">Адрес ядра</span>
                 <input id="ui-core" class="field__control" type="url" placeholder="http://127.0.0.1:8766" spellcheck="false" /></label>
             </div>
-            <div class="row"><button id="ui-reconnect" class="button" type="button">Переподключиться</button></div>
+            <div class="row"><button id="ui-reconnect" class="button" type="button" data-i18n="ui.reconnect">Переподключиться</button></div>
           </section>
         </div>
       </div>
@@ -300,33 +305,33 @@
 
     <div id="consent" class="consent consent--hidden" role="dialog" aria-modal="true" aria-labelledby="consent-title">
       <div class="consent__card">
-        <h2 id="consent-title" class="consent__title">Отправить данные наружу?</h2>
+        <h2 id="consent-title" class="consent__title" data-i18n="consent.title">Отправить данные наружу?</h2>
         <p id="consent-text" class="consent__text"></p>
         <div class="consent__actions">
-          <button id="consent-deny" class="button">Не отправлять</button>
-          <button id="consent-allow" class="button button--warn">Разрешить один раз</button>
-          <button id="consent-always" class="button button--warn">Разрешить всегда</button>
+          <button id="consent-deny" class="button" data-i18n="consent.deny">Не отправлять</button>
+          <button id="consent-allow" class="button button--warn" data-i18n="consent.once">Разрешить один раз</button>
+          <button id="consent-always" class="button button--warn" data-i18n="consent.always">Разрешить всегда</button>
         </div>
       </div>
     </div>
 
     <dialog id="pair-dialog" class="modal">
       <form id="pair-form">
-        <h2>Подключение к компьютеру</h2>
+        <h2 data-i18n="pair.title">Подключение к компьютеру</h2>
         <p id="pair-help">Откройте этот сайт на телефоне и введите одноразовый код с компьютера.</p>
         <output id="pair-code"></output>
-        <label id="pair-host-label" hidden>HTTPS-адрес компьютера для телефона
+        <label id="pair-host-label" hidden><span data-i18n="pair.hostLabel">HTTPS-адрес компьютера для телефона</span>
           <input id="pair-host" class="field__control" type="url" inputmode="url" placeholder="https://192.168.1.15:8765" />
         </label>
         <p id="pair-qr-help" hidden></p>
-        <canvas id="pair-qr" width="220" height="220" hidden aria-label="QR-код для подключения телефона"></canvas>
-        <label id="pair-input-label">Код с компьютера
+        <canvas id="pair-qr" width="220" height="220" hidden aria-label="QR-код для подключения телефона" data-i18n-aria="pair.qrLabel"></canvas>
+        <label id="pair-input-label"><span data-i18n="pair.codeLabel">Код с компьютера</span>
           <input id="pair-input" class="field__control" autocomplete="one-time-code" required maxlength="20" />
         </label>
         <p id="pair-error" role="alert"></p>
         <div class="row row--end">
-          <button id="pair-close" class="button" type="button">Закрыть</button>
-          <button id="pair-submit" class="button button--primary" type="submit">Сопрячь</button>
+          <button id="pair-close" class="button" type="button" data-i18n="pair.close">Закрыть</button>
+          <button id="pair-submit" class="button button--primary" type="submit" data-i18n="pair.submit">Сопрячь</button>
         </div>
       </form>
     </dialog>
@@ -334,28 +339,30 @@
     <dialog id="model-add-dialog" class="modal model-add-dialog" aria-labelledby="model-add-title">
       <form id="model-add-form">
         <div class="row row--between">
-          <h2 id="model-add-title">Добавить модель</h2>
-          <button id="model-add-close" class="icon-button" type="button" aria-label="Закрыть"><svg><use href="#i-close"/></svg></button>
+          <h2 id="model-add-title" data-i18n="addModel.title">Добавить модель</h2>
+          <button id="model-add-close" class="icon-button" type="button" aria-label="Закрыть" data-i18n-aria="pair.close"><svg><use href="#i-close"/></svg></button>
         </div>
-        <p>Подключите модель через OpenAI-совместимый сервер. Для локальной модели сервер должен быть запущен на этом компьютере.</p>
+        <p data-i18n="addModel.intro">Подключите модель через OpenAI-совместимый сервер или сервис синтеза речи. Для локальной модели сервер должен быть запущен на этом компьютере.</p>
         <div class="form-grid">
-          <label class="field"><span class="field__label">Источник</span>
-            <select id="model-add-source" class="field__control" name="source"><option value="local">Локальная</option><option value="provider">Внешний провайдер</option></select></label>
-          <label class="field"><span class="field__label">Сервис</span><select id="model-add-service" class="field__control" name="service"></select></label>
-          <label class="field"><span class="field__label">Назначение</span>
-            <select id="model-add-kind" class="field__control" name="kind"><option value="llm">Диалог</option><option value="vision">Зрение</option><option value="embeddings">Память</option></select></label>
-          <label class="field"><span class="field__label">ID модели</span>
-            <input id="model-add-id" class="field__control" name="model" required maxlength="200" placeholder="Например, qwen3.5:9b" /></label>
-          <label class="field field--wide"><span class="field__label">Адрес API</span>
+          <label class="field"><span class="field__label" data-i18n="addModel.source">Источник</span>
+            <select id="model-add-source" class="field__control" name="source"><option value="local" data-i18n="models.localLabel">Локальная</option><option value="provider" data-i18n="models.external">Внешний провайдер</option></select></label>
+          <label class="field"><span class="field__label" data-i18n="addModel.service">Сервис</span><select id="model-add-service" class="field__control" name="service"></select></label>
+          <label class="field"><span class="field__label" data-i18n="models.purpose">Назначение</span>
+            <select id="model-add-kind" class="field__control" name="kind"><option value="llm" data-i18n="kind.llm">Диалог</option><option value="vision" data-i18n="kind.vision">Зрение</option><option value="embeddings" data-i18n="kind.embeddings">Память</option><option value="tts" data-i18n="kind.tts">Голос</option></select></label>
+          <label class="field"><span class="field__label" data-i18n="addModel.id">ID модели</span>
+            <input id="model-add-id" class="field__control" name="model" required maxlength="200" placeholder="Например, qwen3.5:9b" data-i18n-placeholder="addModel.idPlaceholder" /></label>
+          <label class="field field--wide"><span class="field__label" data-i18n="addModel.endpoint">Адрес API</span>
             <input id="model-add-endpoint" class="field__control" name="endpoint" type="url" required placeholder="http://127.0.0.1:11434/v1" /></label>
-          <label class="field field--wide"><span class="field__label">Переменная с API-ключом</span>
+          <label class="field field--wide"><span class="field__label" data-i18n="addModel.keyEnv">Переменная с API-ключом</span>
             <input id="model-add-key-env" class="field__control" name="api_key_env" autocomplete="off" spellcheck="false" placeholder="OPENROUTER_API_KEY" /></label>
+          <label class="field field--wide" id="model-add-voice-field" hidden><span class="field__label" data-i18n="addModel.voice">Голос (ID у сервиса)</span>
+            <input id="model-add-voice" class="field__control" name="voice" maxlength="100" autocomplete="off" spellcheck="false" placeholder="nova · ID голоса ElevenLabs · ru-RU-SvetlanaNeural" data-i18n-placeholder="addModel.voicePlaceholder" /></label>
         </div>
         <p id="model-add-hint" class="hint">Локальный API должен слушать 127.0.0.1 или localhost. Ключ оставьте пустым, если он не нужен.</p>
         <p id="model-add-error" class="model-add-error" role="alert"></p>
         <div class="row row--end">
-          <button id="model-add-cancel" class="button" type="button">Отмена</button>
-          <button id="model-add-submit" class="button button--primary" type="submit">Добавить</button>
+          <button id="model-add-cancel" class="button" type="button" data-i18n="addModel.cancel">Отмена</button>
+          <button id="model-add-submit" class="button button--primary" type="submit" data-i18n="models.add">Добавить</button>
         </div>
       </form>
     </dialog>

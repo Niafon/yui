@@ -7,6 +7,7 @@
 import { findAvatar, mountAvatar, type MountedAvatar } from "./avatar/catalog";
 import { BUILTIN_AVATARS } from "./avatar/builtin";
 import type { AvatarState, Visemes } from "./avatar/types";
+import { t } from "./i18n";
 import { loadWLipSync } from "./lipsync-loader";
 import { PresenceRibbon, type PresenceState } from "./presence";
 import { onPrefs, prefs, type Prefs } from "./prefs";
@@ -60,7 +61,7 @@ export class Stage {
     this.mounted = undefined;
     const fallback = this.elements.fallback;
     fallback.hidden = false;
-    fallback.textContent = "Загрузка аватара…";
+    fallback.textContent = t("avatar.loading");
     if (!this.active) return false;
     // WebGL contexts cannot switch renderer type; use a fresh canvas.
     const canvas = this.canvas.cloneNode(false) as HTMLCanvasElement;
@@ -78,8 +79,8 @@ export class Stage {
     fallback.hidden = mounted.loaded;
     if (!mounted.loaded) {
       fallback.textContent = entry.kind === "vrm"
-        ? "Не удалось загрузить VRM. Выберите другую модель или проверьте WebGL."
-        : "Не удалось загрузить Live2D. Проверьте файлы модели и поддержку WebGL.";
+        ? t("avatar.vrmFailed")
+        : t("avatar.live2dFailed");
     }
     return mounted.loaded;
   }
@@ -121,7 +122,7 @@ export class Stage {
     await this.speech.resume();
     const context = this.speech.ensureContext();
     const response = await fetch(url);
-    if (!response.ok) throw new Error("Не удалось загрузить пример голоса");
+    if (!response.ok) throw new Error(t("voice.previewFailed"));
     const buffer = await context.decodeAudioData(await response.arrayBuffer());
     const wasEnabled = this.speech.enabled;
     this.speech.enabled = true; // a preview is always local to this window
@@ -130,7 +131,7 @@ export class Stage {
   }
 
   get engineLabel(): string {
-    return this.speech.engine === "mfcc" ? "гласные (wLipSync MFCC)" : "спектральная оценка";
+    return this.speech.engine === "mfcc" ? t("lip.mfcc") : t("lip.spectralActive");
   }
 
   dispose(): void {

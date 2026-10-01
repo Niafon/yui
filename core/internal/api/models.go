@@ -33,6 +33,7 @@ type modelEntry struct {
 	CredentialReady bool               `json:"credential_ready"`
 	APIKeyEnv       string             `json:"api_key_env,omitempty"`
 	UserAdded       bool               `json:"user_added"`
+	Voice           string             `json:"voice,omitempty"`
 }
 
 func (s *Server) modelEntries() []modelEntry {
@@ -55,7 +56,7 @@ func (s *Server) modelEntries() []modelEntry {
 			RAMMB: c.EstimatedRAMMB, VRAMMB: c.EstimatedVRAMMB,
 			AutoSelect: c.AutoSelect, Tags: c.Tags, IsDefault: s.deps.Providers.Default(c.Kind) == c.ID,
 			CredentialReady: s.deps.Providers.CredentialReady(c.ID),
-			APIKeyEnv:       c.APIKeyEnv, UserAdded: added[c.ID],
+			APIKeyEnv:       c.APIKeyEnv, UserAdded: added[c.ID], Voice: c.Voice,
 		})
 	}
 	sort.Slice(out, func(i, j int) bool {
@@ -111,6 +112,13 @@ type addModelRequest struct {
 	Endpoint  string             `json:"endpoint"`
 	Model     string             `json:"model"`
 	APIKeyEnv string             `json:"api_key_env"`
+	// Voice is used by speech models only.
+	Voice string `json:"voice"`
+}
+
+// Default model ids for speech services when the owner leaves the field empty.
+var defaultSpeechModels = map[string]string{
+	"openai": "gpt-4o-mini-tts", "elevenlabs": "eleven_multilingual_v2", "azure": "azure-neural",
 }
 
 var envName = regexp.MustCompile("^[A-Za-z_][A-Za-z0-9_]{0,79}$")
@@ -121,8 +129,22 @@ func (b addModelRequest) config() (model.ProviderConfig, error) {
 	b.Endpoint = strings.TrimSpace(b.Endpoint)
 	b.Model = strings.TrimSpace(b.Model)
 	b.APIKeyEnv = strings.TrimSpace(b.APIKeyEnv)
-	if b.Kind != model.KindLLM && b.Kind != model.KindVision && b.Kind != model.KindEmbeddings {
-		return model.ProviderConfig{}, errors.New("supported kinds: llm, vision, embeddings")
+	b.Voice = strings.TrimSpace(b.Voice)
+	if b.Kind != model.KindLLM && b.Kind != model.KindVision && b.Kind != model.KindEmbeddings && b.Kind != model.KindTTS {
+		return model.ProviderConfig{}, errors.New("supported kinds: llm, vision, embeddings, tts")
+	}
+	speechOnly := b.Service == "elevenlabs" || b.Service == "azure"
+	if speechOnly && b.Kind != model.KindTTS {
+		return model.ProviderConfig{}, errors.New(b.Service + " provides speech synthesis only")
+	}
+	if len(b.Voice) > 100 || strings.ContainsAny(b.Voice, "\r\n<>\"&") {
+		return model.ProviderConfig{}, errors.New("voice must be a plain id up to 100 characters")
+	}
+	if b.Kind == model.KindTTS && b.Model == "" {
+		b.Model = defaultSpeechModels[b.Service]
+		if b.Model == "" {
+			b.Model = "tts-1"
+		}
 	}
 	if len(b.Model) == 0 || len(b.Model) > 200 || strings.ContainsAny(b.Model, "\r\n") {
 		return model.ProviderConfig{}, errors.New("model id must contain 1-200 characters")
@@ -144,7 +166,7 @@ func (b addModelRequest) config() (model.ProviderConfig, error) {
 			return model.ProviderConfig{}, errors.New("local model endpoint must use loopback HTTP(S)")
 		}
 		switch b.Service {
-		case "ollama", "lm-studio", "llama.cpp", "custom":
+		case "ollama", "lm-studio", "llama.cpp", "kokoro", "custom":
 		default:
 			return model.ProviderConfig{}, errors.New("unsupported local service")
 		}
@@ -161,6 +183,14 @@ func (b addModelRequest) config() (model.ProviderConfig, error) {
 			if !strings.EqualFold(u.Hostname(), "api.openai.com") {
 				return model.ProviderConfig{}, errors.New("OpenAI endpoint must use api.openai.com")
 			}
+		case "elevenlabs":
+			if !strings.EqualFold(u.Hostname(), "api.elevenlabs.io") {
+				return model.ProviderConfig{}, errors.New("ElevenLabs endpoint must use api.elevenlabs.io")
+			}
+		case "azure":
+			if !strings.HasSuffix(strings.ToLower(u.Hostname()), ".tts.speech.microsoft.com") {
+				return model.ProviderConfig{}, errors.New("Azure endpoint must be https://<region>.tts.speech.microsoft.com/cognitiveservices/v1")
+			}
 		case "custom":
 		default:
 			return model.ProviderConfig{}, errors.New("unsupported hosted service")
@@ -176,9 +206,17 @@ func (b addModelRequest) config() (model.ProviderConfig, error) {
 	if !local {
 		backend = "remote"
 	}
+	driver := "openai"
+	if speechOnly {
+		driver = b.Service
+	}
+	voice := ""
+	if b.Kind == model.KindTTS {
+		voice = b.Voice
+	}
 	return model.ProviderConfig{
-		ID: ids.New("mdl"), Kind: b.Kind, Driver: "openai", Service: b.Service,
-		Endpoint: strings.TrimRight(b.Endpoint, "/"), Model: b.Model,
+		ID: ids.New("mdl"), Kind: b.Kind, Driver: driver, Service: b.Service,
+		Endpoint: strings.TrimRight(b.Endpoint, "/"), Model: b.Model, Voice: voice,
 		ModelFamily: b.Model, APIKeyEnv: b.APIKeyEnv, Local: local,
 		ExecutionBackend: backend, AutoSelect: false,
 	}, nil
@@ -206,7 +244,7 @@ func (s *Server) handleModelAdd(w http.ResponseWriter, r *http.Request) {
 	s.settingsMu.Lock()
 	defer s.settingsMu.Unlock()
 	for _, existing := range s.deps.Providers.Configs() {
-		if existing.Kind == c.Kind && existing.Endpoint == c.Endpoint && existing.Model == c.Model {
+		if existing.Kind == c.Kind && existing.Endpoint == c.Endpoint && existing.Model == c.Model && existing.Voice == c.Voice {
 			writeError(w, http.StatusConflict, "this model is already configured")
 			return
 		}

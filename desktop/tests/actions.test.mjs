@@ -3,6 +3,9 @@ import { readFile } from 'node:fs/promises';
 import vm from 'node:vm';
 import test from 'node:test';
 import ts from 'typescript';
+import { load } from './bundle.mjs';
+
+const { t, has } = await load('i18n.ts');
 
 // Run the actual event handlers without loading WebGL or opening a live session.
 const source = await readFile(new URL('../src/main.ts', import.meta.url), 'utf8');
@@ -38,6 +41,7 @@ function fixture() {
   let timerId = 0;
   let stopped = 0;
   const context = vm.createContext({
+    t, has,
     client: {
       confirmTool: async (...args) => { requests.push(args); return { result: args[1] ? 'Создано' : 'Отменено' }; },
       resolvePermission: async (...args) => { requests.push(args); },

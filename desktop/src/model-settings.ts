@@ -1,3 +1,4 @@
+import { has, onLang, t, type Key } from "./i18n";
 import {
   type AddModelInput,
   type CatalogModel,
@@ -20,33 +21,41 @@ const names: Record<string, string> = {
   "llama.cpp": "llama.cpp",
   "openrouter": "OpenRouter",
   "openai": "OpenAI",
-  "local": "Локальный сервер",
+  "elevenlabs": "ElevenLabs",
+  "azure": "Azure Speech",
+  "kokoro": "Kokoro (OpenAI-compatible)",
   "yui-worker": "Yui Worker",
-  "mock": "Встроенная",
-  "custom": "Другой сервис",
 };
+const translatedNames: Record<string, Key> = { local: "service.local", mock: "service.mock", custom: "service.custom" };
 
-const kinds: Record<string, string> = {
-  llm: "Диалог",
-  stt: "Распознавание речи",
-  tts: "Голос",
-  vision: "Зрение",
-  embeddings: "Память",
-};
-
-const services = {
-  local: [
-    ["ollama", "Ollama", "http://127.0.0.1:11434/v1"],
-    ["lm-studio", "LM Studio", "http://127.0.0.1:1234/v1"],
-    ["llama.cpp", "llama.cpp", "http://127.0.0.1:8080/v1"],
-    ["custom", "Другой локальный сервер", ""],
-  ],
-  provider: [
-    ["openrouter", "OpenRouter", "https://openrouter.ai/api/v1"],
-    ["openai", "OpenAI", "https://api.openai.com/v1"],
-    ["custom", "Другой провайдер", ""],
-  ],
-} as const;
+type Preset = readonly [id: string, label: string | Key, endpoint: string, keyEnv?: string];
+/** Services offered in the add dialog, by source and purpose. */
+function servicesFor(source: "local" | "provider", kind: string): Preset[] {
+  if (kind === "tts") {
+    return source === "local"
+      ? [["kokoro", "Kokoro-FastAPI", "http://127.0.0.1:8880/v1"], ["custom", "service.customLocal", ""]]
+      : [
+        ["openai", "OpenAI", "https://api.openai.com/v1", "OPENAI_API_KEY"],
+        ["elevenlabs", "ElevenLabs", "https://api.elevenlabs.io/v1", "ELEVENLABS_API_KEY"],
+        ["azure", "Azure Speech", "https://westeurope.tts.speech.microsoft.com/cognitiveservices/v1", "AZURE_SPEECH_KEY"],
+        ["custom", "service.customProvider", ""],
+      ];
+  }
+  return source === "local"
+    ? [
+      ["ollama", "Ollama", "http://127.0.0.1:11434/v1"],
+      ["lm-studio", "LM Studio", "http://127.0.0.1:1234/v1"],
+      ["llama.cpp", "llama.cpp", "http://127.0.0.1:8080/v1"],
+      ["custom", "service.customLocal", ""],
+    ]
+    : [
+      ["openrouter", "OpenRouter", "https://openrouter.ai/api/v1", "OPENROUTER_API_KEY"],
+      ["openai", "OpenAI", "https://api.openai.com/v1", "OPENAI_API_KEY"],
+      ["custom", "service.customProvider", ""],
+    ];
+}
+const presetLabel = (label: string): string => (has(label) ? t(label) : label);
+const kindName = (kind: string): string => (has(`kind.${kind}`) ? t(`kind.${kind}` as Key) : kind);
 
 function byId<T extends HTMLElement>(id: string): T {
   const element = document.getElementById(id);
@@ -68,16 +77,17 @@ function displayName(model: CatalogModel): string {
 }
 
 function serviceName(service: string): string {
-  return names[service] || service;
+  const key = translatedNames[service];
+  return key ? t(key) : names[service] || service;
 }
 
 function operationName(model: CatalogModel): string {
-  if (model.driver === "mock") return "Встроенная тестовая модель";
-  if (model.driver === "worker") return "Локальный worker";
-  if (!model.local) return "Облачный API";
-  if (model.backend === "gpu") return "Локально · GPU";
-  if (model.backend === "cpu") return "Локально · CPU";
-  return "Локальный API";
+  if (model.driver === "mock") return t("op.mock");
+  if (model.driver === "worker") return t("op.worker");
+  if (!model.local) return t("op.cloud");
+  if (model.backend === "gpu") return t("op.gpu");
+  if (model.backend === "cpu") return t("op.cpu");
+  return t("op.localApi");
 }
 
 export function initModelSettings(options: SettingsOptions) {
@@ -124,7 +134,7 @@ export function initModelSettings(options: SettingsOptions) {
     const available = Array.from(new Set(models
       .filter(model => model.kind === kindFilter.value && (source === "all" || model.local === (source === "local")))
       .map(model => model.service))).sort();
-    providerFilter.replaceChildren(new Option("Все провайдеры", ""));
+    providerFilter.replaceChildren(new Option(t("models.allProviders"), ""));
     for (const service of available) providerFilter.add(new Option(serviceName(service), service));
     providerFilter.value = available.includes(current) ? current : "";
   }
@@ -138,43 +148,44 @@ export function initModelSettings(options: SettingsOptions) {
   function renderDetail(model?: CatalogModel): void {
     detail.replaceChildren();
     if (!model) {
-      detail.append(element("p", "model-detail-empty", "Выберите модель из списка, чтобы увидеть её параметры."));
+      detail.append(element("p", "model-detail-empty", t("models.pick")));
       return;
     }
-    const label = element("p", "model-detail-source", `${serviceName(model.service)} · ${model.local ? "Локальная" : "Внешний провайдер"}`);
+    const label = element("p", "model-detail-source", `${serviceName(model.service)} · ${model.local ? t("models.localLabel") : t("models.external")}`);
     const title = element("h3", "model-detail-title", displayName(model));
     const meta = element("p", "model-detail-id", model.id);
     const facts = element("dl", "model-facts");
     facts.append(
-      field("Назначение", kinds[model.kind] || model.kind),
-      field("Семейство", model.model_family || "Не указано"),
-      field("Способ работы", operationName(model)),
-      field("Выбор", model.auto_select ? "Участвует в автоподборе" : "Выбирается вручную"),
-      field("Качество", model.quality ? `${model.quality}/100 · оценка для автовыбора` : "Не указано"),
-      field("RAM", model.estimated_ram_mb ? `≈ ${model.estimated_ram_mb} МБ` : "Не указано"),
-      field("VRAM", model.estimated_vram_mb ? `≈ ${model.estimated_vram_mb} МБ` : "Не указано"),
-      field("API", model.endpoint || (model.driver === "mock" ? "Не требуется" : "Встроенный worker")),
-      field("Ключ", model.api_key_env
-        ? (model.credential_ready ? `${model.api_key_env} · доступен` : `${model.api_key_env} · не задан`)
-        : "Не требуется"),
-      field("Профиль", model.user_added ? "Добавлен в настройках" : "Из конфигурации Yui"),
+      field(t("fact.purpose"), kindName(model.kind)),
+      field(t("fact.family"), model.model_family || t("fact.notSet")),
+      field(t("fact.operation"), operationName(model)),
+      field(t("fact.selection"), model.auto_select ? t("fact.auto") : t("fact.manual")),
+      field(t("fact.quality"), model.quality ? t("fact.qualityValue", { quality: model.quality }) : t("fact.notSet")),
+      field("RAM", model.estimated_ram_mb ? `≈ ${model.estimated_ram_mb} ${t("avatar.mb")}` : t("fact.notSet")),
+      field("VRAM", model.estimated_vram_mb ? `≈ ${model.estimated_vram_mb} ${t("avatar.mb")}` : t("fact.notSet")),
+      field("API", model.endpoint || (model.driver === "mock" ? t("fact.notNeeded") : t("fact.builtInWorker"))),
+      field(t("fact.key"), model.api_key_env
+        ? t(model.credential_ready ? "fact.keyReady" : "fact.keyMissing", { env: model.api_key_env })
+        : t("fact.notNeeded")),
+      field(t("fact.profile"), model.user_added ? t("fact.userAdded") : t("fact.fromConfig")),
     );
-    if (model.tags?.length) facts.append(field("Метки", model.tags.join(", ")));
+    if (model.voice) facts.append(field(t("fact.voice"), model.voice));
+    if (model.tags?.length) facts.append(field(t("fact.tags"), model.tags.join(", ")));
     const note = element("p", "model-detail-note",
       model.driver === "mock"
-        ? "Тестовый провайдер работает без внешнего сервера."
+        ? t("models.noteMock")
         : model.local
-          ? "Локальный сервер должен быть запущен. Доступность проверится при запросе."
-          : "Передача данных этому провайдеру контролируется разрешениями Yui.");
+          ? t("models.noteLocal")
+          : t("models.noteRemote"));
     const action = element("button", "button button--primary model-detail-action",
-      isSelected(model) ? "Выбрана" : "Использовать");
+      isSelected(model) ? t("models.selected") : t("models.use"));
     action.type = "button";
     action.disabled = !connected || isSelected(model) || !model.credential_ready;
     action.addEventListener("click", () => void useModel(model));
     detail.append(label, title, meta, facts, note, action);
     if (model.api_key_env && !model.credential_ready) {
       detail.append(element("p", "model-detail-warning",
-        `Задайте ${model.api_key_env} в окружении ядра и перезапустите Yui.`));
+        t("models.setKey", { env: model.api_key_env })));
     }
   }
 
@@ -183,9 +194,9 @@ export function initModelSettings(options: SettingsOptions) {
     list.replaceChildren();
     if (!visible.length) {
       list.append(element("p", "models-empty",
-        models.length ? "По этим условиям моделей нет." : "Пока нет добавленных моделей."));
+        models.length ? t("models.noMatch") : t("models.none")));
       renderDetail();
-      message.textContent = connected ? "Можно добавить OpenAI-совместимую модель." : "Подключите ядро, чтобы увидеть модели.";
+      message.textContent = connected ? t("models.canAdd") : t("models.connect");
       return;
     }
     if (!visible.some(model => model.id === selectedId)) {
@@ -197,29 +208,29 @@ export function initModelSettings(options: SettingsOptions) {
       card.setAttribute("aria-pressed", String(model.id === selectedId));
       const top = element("span", "model-card__top");
       top.append(element("strong", "", displayName(model)));
-      if (isSelected(model)) top.append(element("span", "model-card__active", "Выбрана"));
-      else if (model.is_default) top.append(element("span", "model-card__default", "По умолчанию"));
+      if (isSelected(model)) top.append(element("span", "model-card__active", t("models.selected")));
+      else if (model.is_default) top.append(element("span", "model-card__default", t("models.default")));
       card.append(top, element("span", "model-card__meta",
-        `${serviceName(model.service)} · ${model.local ? "локально" : "внешний"}`));
-      if (!model.credential_ready) card.append(element("span", "model-card__warning", "Нужен API-ключ"));
+        `${serviceName(model.service)} · ${model.local ? t("models.localShort") : t("models.externalShort")}`));
+      if (!model.credential_ready) card.append(element("span", "model-card__warning", t("models.needKey")));
       card.addEventListener("click", () => {
         selectedId = model.id;
         render();
       });
       list.append(card);
     }
-    message.textContent = `${visible.length} из ${models.filter(model => model.kind === kindFilter.value).length} моделей`;
+    message.textContent = t("models.count", { visible: visible.length, total: models.filter(model => model.kind === kindFilter.value).length });
     renderDetail(visible.find(model => model.id === selectedId));
   }
 
   async function useModel(model: CatalogModel): Promise<void> {
     const current = options.getClient();
     if (!current) return;
-    message.textContent = "Сохраняю выбор…";
+    message.textContent = t("models.saving");
     try {
       if (model.kind === "llm") {
         const prefs = options.getInference()?.preferences;
-        if (!prefs) throw new Error("Сначала загрузите настройки AI Runtime.");
+        if (!prefs) throw new Error(t("models.loadRuntime"));
         const status = await current.updateInferencePreferences({
           ...prefs,
           mode: "manual",
@@ -236,9 +247,9 @@ export function initModelSettings(options: SettingsOptions) {
         await refresh();
       }
       render();
-      message.textContent = "Выбор сохранён. Новая модель применится при следующем запросе.";
+      message.textContent = t("models.saved");
     } catch (error) {
-      message.textContent = `Не удалось выбрать модель: ${String(error)}`;
+      message.textContent = t("models.saveFailed", { error: String(error) });
     }
   }
 
@@ -248,7 +259,7 @@ export function initModelSettings(options: SettingsOptions) {
       setConnected(false);
       return;
     }
-    message.textContent = "Загружаю модели…";
+    message.textContent = t("models.loading");
     try {
       const catalog = await current.models();
       if (options.getClient() !== current) return;
@@ -258,7 +269,7 @@ export function initModelSettings(options: SettingsOptions) {
       render();
     } catch (error) {
       if (options.getClient() !== current) return;
-      message.textContent = `Не удалось загрузить модели: ${String(error)}`;
+      message.textContent = t("models.loadFailed", { error: String(error) });
     }
   }
 
@@ -282,11 +293,19 @@ export function initModelSettings(options: SettingsOptions) {
     }
   }
 
+  const kindInput = byId<HTMLSelectElement>("model-add-kind");
+  const voiceField = byId<HTMLElement>("model-add-voice-field");
+  const voiceInput = byId<HTMLInputElement>("model-add-voice");
+  const modelIdInput = byId<HTMLInputElement>("model-add-id");
+
+  function presets(): Preset[] {
+    return servicesFor(sourceInput.value as "local" | "provider", kindInput.value);
+  }
+
   function updateServices(resetEndpoint: boolean): void {
-    const source = sourceInput.value as "local" | "provider";
     const previous = serviceInput.value;
     serviceInput.replaceChildren();
-    for (const [value, label] of services[source]) serviceInput.add(new Option(label, value));
+    for (const [value, label] of presets()) serviceInput.add(new Option(presetLabel(label), value));
     if (!resetEndpoint && Array.from(serviceInput.options).some(option => option.value === previous)) {
       serviceInput.value = previous;
     }
@@ -295,17 +314,22 @@ export function initModelSettings(options: SettingsOptions) {
 
   function applyPreset(replace: boolean): void {
     const source = sourceInput.value as "local" | "provider";
-    const preset = services[source].find(([id]) => id === serviceInput.value);
+    const speech = kindInput.value === "tts";
+    const preset = presets().find(([id]) => id === serviceInput.value);
     if (replace) endpointInput.value = preset?.[2] || "";
+    voiceField.hidden = !speech;
+    // Speech services have sensible default models; the field becomes optional.
+    modelIdInput.required = !speech;
+    const speechDefaults: Record<string, string> = { openai: "gpt-4o-mini-tts", elevenlabs: "eleven_multilingual_v2", azure: "azure-neural", kokoro: "kokoro" };
+    modelIdInput.placeholder = speech ? speechDefaults[serviceInput.value] ?? "tts-1" : t("addModel.idPlaceholder");
     if (source === "provider") {
-      if (replace) keyEnvInput.value = serviceInput.value === "openrouter" ? "OPENROUTER_API_KEY"
-        : serviceInput.value === "openai" ? "OPENAI_API_KEY" : "";
+      if (replace) keyEnvInput.value = preset?.[3] ?? "";
       keyEnvInput.required = true;
-      hint.textContent = "Укажите имя переменной с ключом в окружении ядра. Сам ключ здесь не вводится и не сохраняется.";
+      hint.textContent = speech ? `${t("addModel.hintRemote")} ${t("addModel.hintSpeech")}` : t("addModel.hintRemote");
     } else {
       if (replace) keyEnvInput.value = "";
       keyEnvInput.required = false;
-      hint.textContent = "Локальный API должен слушать 127.0.0.1 или localhost. Ключ оставьте пустым, если он не нужен.";
+      hint.textContent = t("addModel.hintLocal");
     }
   }
 
@@ -334,18 +358,20 @@ export function initModelSettings(options: SettingsOptions) {
   byId<HTMLButtonElement>("model-add-close").addEventListener("click", () => dialog.close());
   byId<HTMLButtonElement>("model-add-cancel").addEventListener("click", () => dialog.close());
   sourceInput.addEventListener("change", () => updateServices(true));
+  kindInput.addEventListener("change", () => updateServices(true));
   serviceInput.addEventListener("change", () => applyPreset(true));
   form.addEventListener("submit", (event) => {
     event.preventDefault();
     const current = options.getClient();
     if (!current) return;
     const input: AddModelInput = {
-      kind: byId<HTMLSelectElement>("model-add-kind").value as AddModelInput["kind"],
+      kind: kindInput.value as AddModelInput["kind"],
       source: sourceInput.value as AddModelInput["source"],
       service: serviceInput.value,
       endpoint: endpointInput.value.trim(),
-      model: byId<HTMLInputElement>("model-add-id").value.trim(),
+      model: modelIdInput.value.trim(),
       api_key_env: keyEnvInput.value.trim(),
+      voice: kindInput.value === "tts" ? voiceInput.value.trim() : "",
     };
     submit.disabled = true;
     errorText.textContent = "";
@@ -365,7 +391,7 @@ export function initModelSettings(options: SettingsOptions) {
       providerFilter.value = input.service;
       dialog.close();
       render();
-      message.textContent = "Модель добавлена. Выберите «Использовать», чтобы включить её.";
+      message.textContent = t("models.added");
     }).catch(error => {
       errorText.textContent = String(error);
     }).finally(() => { submit.disabled = false; });
@@ -373,5 +399,10 @@ export function initModelSettings(options: SettingsOptions) {
 
   updateServices(true);
   setConnected(false);
+  onLang(() => {
+    updateProviderFilter();
+    updateServices(false);
+    render();
+  });
   return { refresh, renderStatus, setConnected };
 }

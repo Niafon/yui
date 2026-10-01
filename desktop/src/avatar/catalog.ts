@@ -3,6 +3,7 @@
  * files stay in this browser profile (IndexedDB) and never leave the device.
  */
 
+import { t } from "../i18n";
 import { createStore, del, get, set } from "idb-keyval";
 import type { Live2DSource } from "./live2d";
 import type { Avatar } from "./types";
@@ -31,13 +32,13 @@ const MAX_IMPORT = 200 * 1024 * 1024;
 
 /** Imports a .vrm file or a zipped Live2D (Cubism 3/4) model package. */
 export async function importAvatar(file: File): Promise<AvatarEntry> {
-  if (!store) throw new Error("Хранилище браузера недоступно");
-  if (file.size > MAX_IMPORT) throw new Error("Файл больше 200 МБ");
+  if (!store) throw new Error(t("avatar.storage"));
+  if (file.size > MAX_IMPORT) throw new Error(t("avatar.tooBig"));
   const lower = file.name.toLowerCase();
   let kind: AvatarKind;
   if (lower.endsWith(".vrm")) {
     const head = new Uint8Array(await file.slice(0, 4).arrayBuffer());
-    if (String.fromCharCode(...head) !== "glTF") throw new Error("Это не VRM: нет заголовка glTF");
+    if (String.fromCharCode(...head) !== "glTF") throw new Error(t("avatar.notVrm"));
     kind = "vrm";
   } else if (lower.endsWith(".zip")) {
     // Validate the package before it is stored; the preview URLs are not kept.
@@ -45,13 +46,13 @@ export async function importAvatar(file: File): Promise<AvatarEntry> {
     urls.forEach(url => URL.revokeObjectURL(url));
     kind = "live2d";
   } else {
-    throw new Error("Поддерживаются .vrm и .zip с моделью Live2D (.model3.json)");
+    throw new Error(t("avatar.formats"));
   }
   const id = `custom-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
   const entry: AvatarEntry = {
     id, kind, url: "", builtin: false,
-    label: file.name.replace(/\.(vrm|zip)$/i, "").slice(0, 40) || "Своя модель",
-    note: `${kind === "vrm" ? "VRM" : "Live2D"} · ${(file.size / 1048576).toFixed(1)} МБ`,
+    label: file.name.replace(/\.(vrm|zip)$/i, "").slice(0, 40) || t("avatar.custom"),
+    note: `${kind === "vrm" ? "VRM" : "Live2D"} · ${(file.size / 1048576).toFixed(1)} ${t("avatar.mb")}`,
   };
   await set(`file:${id}`, file, store);
   await set(INDEX_KEY, [...(await readIndex()), entry], store);
@@ -76,7 +77,7 @@ async function unpackLive2D(blob: Blob): Promise<Unpacked> {
     unzip(bytes, (error, data) => (error ? reject(error) : resolve(data))));
   const names = Object.keys(files).filter(name => !name.startsWith("__MACOSX/"));
   const modelPath = names.find(name => name.toLowerCase().endsWith(".model3.json"));
-  if (!modelPath) throw new Error("В архиве нет файла .model3.json (поддерживаются Cubism 3/4)");
+  if (!modelPath) throw new Error(t("avatar.noModel3"));
   const json = JSON.parse(new TextDecoder().decode(files[modelPath])) as Record<string, unknown>;
   const directory = modelPath.includes("/") ? modelPath.slice(0, modelPath.lastIndexOf("/") + 1) : "";
   const urls: string[] = [];
@@ -95,7 +96,7 @@ async function unpackLive2D(blob: Blob): Promise<Unpacked> {
   };
   const refs = (json.FileReferences ?? {}) as Record<string, unknown>;
   const moc = resolve(refs.Moc);
-  if (!moc) { urls.forEach(URL.revokeObjectURL); throw new Error("В архиве не найден файл .moc3"); }
+  if (!moc) { urls.forEach(URL.revokeObjectURL); throw new Error(t("avatar.noMoc")); }
   refs.Moc = moc;
   refs.Textures = ((refs.Textures as unknown[]) ?? []).map(resolve).filter(Boolean);
   for (const key of ["Physics", "Pose", "DisplayInfo", "UserData"]) {
@@ -138,9 +139,9 @@ export async function mountAvatar(entry: AvatarEntry, canvas: HTMLCanvasElement)
   try {
     let source: Live2DSource = entry.url;
     if (!entry.builtin) {
-      if (!store) throw new Error("Хранилище браузера недоступно");
+      if (!store) throw new Error(t("avatar.storage"));
       const blob = await get<Blob>(`file:${entry.id}`, store);
-      if (!blob) throw new Error("Файл модели не найден. Импортируйте его заново.");
+      if (!blob) throw new Error(t("avatar.missingFile"));
       if (entry.kind === "vrm") {
         source = URL.createObjectURL(blob);
         urls.push(source);

@@ -557,6 +557,17 @@ html.avatar-window, .view-avatar { background: transparent !important; overflow:
 }
 .pet:hover .pet__bar, .pet__bar:focus-within { opacity: 1; transform: translate(-50%, 0); }
 #pet-drag { cursor: grab; }
+.pet__through {
+  position: absolute; z-index: 4; left: 50%; bottom: 12px; transform: translateX(-50%);
+  margin: 0; padding: 4px 11px; border-radius: 999px;
+  background: color-mix(in srgb, var(--surface) 70%, transparent);
+  color: var(--muted); font-size: 11px; white-space: nowrap;
+  animation: fade-out 4s ease forwards;
+}
+@keyframes fade-out { 70% { opacity: 1; } to { opacity: 0; } }
+.click-through .pet__bar { display: none; }
+.desktop-only { display: none; }
+.tauri .desktop-only { display: block; }
 
 /* Responsive ------------------------------------------------------------- */
 @media (max-width: 900px) {

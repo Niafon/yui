@@ -16,13 +16,14 @@ import {
   type InferenceStatus,
   type PendingTool,
 } from "./api";
+import { applyI18n, detectLang, has, onLang, setLang, t, type Key } from "./i18n";
 import { renderMarkdown } from "./markdown";
 import { Microphone } from "./mic";
 import { initModelSettings } from "./model-settings";
 import { applyAppearance, onPrefs, prefs } from "./prefs";
 import { initSettings, iconButton } from "./settings";
 import { Stage } from "./stage";
-import { WindowHub, closeDetached, isTauri, openDetached, type WindowRole } from "./windows";
+import { WindowHub, closeDetached, isTauri, openDetached, tauriInvoke, tauriListen, type WindowRole } from "./windows";
 import QRCode from "qrcode";
 
 const el = <T extends HTMLElement>(id: string): T => {
@@ -31,26 +32,16 @@ const el = <T extends HTMLElement>(id: string): T => {
   return node as T;
 };
 
-const STATE_LABELS: Record<string, string> = {
-  idle: "готова",
-  listening: "слушает",
-  thinking: "думает",
-  speaking: "говорит",
-  acting: "выполняет действие",
-  error: "ошибка",
-  closed: "сессия закрыта",
-};
-
-const EMOTION_LABELS: Record<string, string> = {
-  joy: "радость", warm: "тепло", concern: "сочувствие", sad: "грусть", alert: "внимание",
-  surprise: "удивление", think: "раздумье", calm: "спокойствие", angry: "недовольство",
-};
+const stateLabel = (state: string): string => (has(`state.${state}`) ? t(`state.${state}` as Key) : state);
+const emotionLabel = (label: string): string => (has(`emotion.${label}`) ? t(`emotion.${label}` as Key) : "");
 
 const query = new URLSearchParams(location.search);
 const view: WindowRole = query.get("view") === "chat" ? "chat" : "main";
 document.body.classList.toggle("view-main", view === "main");
 document.body.classList.toggle("view-chat", view === "chat");
 applyAppearance();
+setLang(prefs().lang === "auto" ? detectLang() : prefs().lang as "ru" | "en");
+applyI18n();
 
 const stage = new Stage({
   frame: el("stage-frame"),
@@ -61,7 +52,7 @@ const stage = new Stage({
 });
 el("presence").hidden = !prefs().showRibbon;
 const hub = new WindowHub(view, () => syncWindows());
-hub.onUserText = (session, text) => { if (session === sessionId) addTurn("Вы", text); };
+hub.onUserText = (session, text) => { if (session === sessionId) addTurn(t("chat.you"), text, "turn--user"); };
 // The chat window never shows the avatar; main mounts it unless detached.
 if (view === "main" && !hub.hasPeer("avatar")) void stage.load();
 else stage.setActive(false);
@@ -81,6 +72,8 @@ let remoteDefaultProvider = false;
 let ledgerLoaded = false;
 let modelSettings: ReturnType<typeof initModelSettings> | undefined;
 let assistantSpeaking = false;
+let coreVersion = "";
+let micActive = false;
 let reconnectTimer: number | undefined;
 let reconnectDelay = 2000;
 
@@ -88,7 +81,7 @@ let reconnectDelay = 2000;
 function scheduleReconnect(): void {
   if (reconnectTimer !== undefined) return;
   const session = localStorage.getItem("yui.session") ?? "";
-  el("bar-core").textContent = `переподключение через ${Math.round(reconnectDelay / 1000)} с`;
+  el("bar-core").textContent = t("conn.retry", { seconds: Math.round(reconnectDelay / 1000) });
   reconnectTimer = window.setTimeout(() => {
     reconnectTimer = undefined;
     reconnectDelay = Math.min(30000, reconnectDelay * 2);
@@ -122,8 +115,8 @@ function updatePrivacyTag(preferences?: InferenceStatus["preferences"]): void {
     : lastInferenceStatus?.models.some(model => model.kind === "llm" && model.local === false
       && (model.model_family || model.model) === preferences?.locked_model) ?? false;
   const tag = el("bar-privacy");
-  tag.textContent = remoteLock ? "выбрана внешняя модель"
-    : remoteDefaultProvider ? "разрешён внешний провайдер" : "только локально";
+  tag.textContent = remoteLock ? t("privacy.remoteLock")
+    : remoteDefaultProvider ? t("privacy.remoteDefault") : t("privacy.local");
   tag.className = `tag ${remoteLock || remoteDefaultProvider ? "tag--remote" : "tag--local"}`;
 }
 
@@ -162,8 +155,10 @@ async function tauriConnection(): Promise<{ base: string; token: string } | unde
   } catch { return undefined; }
 }
 
+let currentState = "offline";
 function setState(state: string): void {
-  el("state-label").textContent = STATE_LABELS[state] ?? state;
+  currentState = state;
+  el("state-label").textContent = stateLabel(state);
   el("state-dot").dataset.state = state;
   assistantSpeaking = state === "speaking";
   stage.setState(state);
@@ -179,7 +174,7 @@ function addTurn(who: string, text: string, kind = "", at?: string): HTMLParagra
   document.getElementById("transcript-empty")?.remove();
   const stick = list.scrollHeight - list.scrollTop - list.clientHeight < 80;
   const item = document.createElement("li");
-  item.className = `turn ${kind || (who === "Вы" ? "turn--user" : "turn--notice")}`;
+  item.className = `turn ${kind || (who === t("chat.you") ? "turn--user" : "turn--notice")}`;
   const label = document.createElement("span");
   label.className = "turn__who";
   label.textContent = who;
@@ -213,7 +208,7 @@ function renderAssistant(body: HTMLElement, text: string): void {
 }
 
 function addAssistantTurn(text: string, at?: string): HTMLElement {
-  const body = addTurn(identity?.name ?? "Юи", "", "turn--assistant", at);
+  const body = addTurn(identity?.name ?? t("chat.yui"), "", "turn--assistant", at);
   if (text) renderAssistant(body, text);
   return body;
 }
@@ -225,7 +220,7 @@ function clearTranscript(): void {
   empty.id = "transcript-empty";
   empty.className = "transcript__empty";
   empty.innerHTML = '<span class="transcript__glyph" aria-hidden="true"><svg><use href="#i-sparkle"/></svg></span>'
-    + "<strong>Новый разговор</strong><span>Напишите Юи или включите микрофон.</span>";
+    + `<strong data-i18n="chat.newTitle">${t("chat.newTitle")}</strong><span data-i18n="chat.newText">${t("chat.newText")}</span>`;
   list.append(empty);
   streamingTurn = undefined;
 }
@@ -236,7 +231,7 @@ async function loadHistory(currentClient: CoreClient, session: string): Promise<
     if (client !== currentClient || sessionId !== session) return;
     clearTranscript();
     for (const turn of turns.slice().reverse()) {
-      if (turn.role === "user") addTurn("Вы", turn.text, "", turn.started_at);
+      if (turn.role === "user") addTurn(t("chat.you"), turn.text, "turn--user", turn.started_at);
       else if (turn.role === "assistant" && turn.text) addAssistantTurn(turn.text, turn.completed_at || turn.started_at);
     }
   } catch { /* history is a convenience; the live session still works */ }
@@ -253,7 +248,7 @@ function addMemory(payload: Record<string, unknown>): void {
   item.replaceChildren();
   const meta = document.createElement("div");
   meta.className = "memory__meta";
-  meta.textContent = `${payload.category} · ${payload.status}${payload.pinned ? " · закреплено" : ""}`;
+  meta.textContent = `${payload.category} · ${payload.status}${payload.pinned ? ` · ${t("memory.pinned")}` : ""}`;
   const text = document.createElement("div");
   text.textContent = String(payload.content ?? "");
   item.append(meta, text);
@@ -269,17 +264,17 @@ function memoryActions(id: string, payload: Record<string, unknown>): HTMLElemen
     const current = client;
     if (!current) return;
     void task(current).then(() => refreshMemory()).catch(error => {
-      el("memory-empty").textContent = `Не удалось изменить память: ${String(error)}`;
+      el("memory-empty").textContent = t("memory.changeFailed", { error: String(error) });
       el("memory-empty").classList.remove("pane--hidden");
     });
   };
   if (payload.status === "needs_confirmation") {
-    actions.append(iconButton("check", "Подтвердить", act(current => current.confirmMemory(id, true))));
+    actions.append(iconButton("check", t("memory.confirm"), act(current => current.confirmMemory(id, true))));
   }
   const pinned = payload.pinned === true;
   actions.append(
-    iconButton("pin", pinned ? "Открепить" : "Закрепить", act(current => current.pinMemory(id, !pinned))),
-    iconButton("trash", "Удалить", act(current => current.deleteMemory(id))),
+    iconButton("pin", pinned ? t("memory.unpin") : t("memory.pin"), act(current => current.pinMemory(id, !pinned))),
+    iconButton("trash", t("memory.delete"), act(current => current.deleteMemory(id))),
   );
   return actions;
 }
@@ -292,14 +287,14 @@ function addLedgerEntry(provider: string, included: string[], excluded: string[]
   item.dataset.remote = String(remote);
   const meta = document.createElement("div");
   meta.className = "ledger__meta";
-  meta.textContent = `${provider} · ${remote === undefined ? "тип провайдера неизвестен" : remote ? "внешний" : "локальный"}${result ? ` · ${result}` : ""}`;
+  meta.textContent = `${provider} · ${remote === undefined ? t("ledger.unknownType") : remote ? t("ledger.remote") : t("ledger.local")}${result ? ` · ${result}` : ""}`;
   const sent = document.createElement("div");
-  sent.textContent = `${result === "error" ? "Категории попытки вызова" : remote === undefined ? "Категории вызова" : remote ? "Передано вовне" : "Передано локально"}: ${included.join(", ") || "без категорий"}`;
+  sent.textContent = `${result === "error" ? t("ledger.attempt") : remote === undefined ? t("ledger.categories") : remote ? t("ledger.sentOut") : t("ledger.sentLocal")}: ${included.join(", ") || t("ledger.none")}`;
   item.append(meta, sent);
   if (excluded.length > 0) {
     const held = document.createElement("div");
     held.className = "memory__meta";
-    held.textContent = `исключено: ${excluded.join(", ")}`;
+    held.textContent = t("ledger.excluded", { list: excluded.join(", ") });
     item.append(held);
   }
   list.prepend(item);
@@ -320,12 +315,12 @@ async function refreshMemory(): Promise<void> {
     }
     for (const item of items.reverse()) addMemory(item as unknown as Record<string, unknown>);
     const empty = el("memory-empty");
-    empty.textContent = "Сохранённых воспоминаний пока нет.";
+    empty.textContent = t("memory.empty");
     empty.classList.toggle("pane--hidden", list.children.length > 0);
   } catch (error) {
     if (client !== currentClient) return;
     const empty = el("memory-empty");
-    empty.textContent = `Не удалось загрузить память: ${String(error)}`;
+    empty.textContent = t("memory.loadFailed", { error: String(error) });
     empty.classList.remove("pane--hidden");
   }
 }
@@ -341,15 +336,15 @@ async function loadLedger(): Promise<void> {
       if (record.action !== "provider.call" || record.reason !== "dialog_turn") continue;
       const local = providerLocal.get(record.provider ?? "");
       const remote = local === undefined ? undefined : !local;
-      addLedgerEntry(record.provider ?? "модель", record.categories ?? [], [], remote, record.id, record.result);
+      addLedgerEntry(record.provider ?? t("ledger.model"), record.categories ?? [], [], remote, record.id, record.result);
     }
     ledgerLoaded = true;
     if (el("ledger-list").children.length === 0) {
-      el("ledger-empty").textContent = "Вызовов модели пока нет.";
+      el("ledger-empty").textContent = t("privacy.noCalls");
     }
   } catch (error) {
     if (client !== currentClient) return;
-    el("ledger-empty").textContent = `Не удалось загрузить журнал: ${String(error)}`;
+    el("ledger-empty").textContent = t("ledger.loadFailed", { error: String(error) });
   }
 }
 
@@ -367,9 +362,7 @@ function showConsent(): void {
   const pending = consentQueue[0];
   if (!pending) { el("consent").classList.add("consent--hidden"); return; }
   const currentClient = client;
-  el("consent-text").textContent =
-    `Провайдер «${pending.provider ?? "неизвестный"}» запрашивает категорию «${pending.category}». ` +
-    `Одноразовое разрешение действует для следующего запроса в течение пяти минут.`;
+  el("consent-text").textContent = t("consent.text", { provider: pending.provider ?? t("consent.unknown"), category: pending.category });
   el("consent").classList.remove("consent--hidden");
 
   const buttons = ["consent-deny", "consent-allow", "consent-always"].map(id => el<HTMLButtonElement>(id));
@@ -384,7 +377,7 @@ function showConsent(): void {
       showConsent();
     } catch (error) {
       if (client !== currentClient) return;
-      el("consent-text").textContent = `Не удалось сохранить решение: ${String(error)}. Повторите попытку.`;
+      el("consent-text").textContent = t("consent.failed", { error: String(error) });
       buttons.forEach(button => { button.disabled = false; });
     }
   };
@@ -400,7 +393,7 @@ function showToolResult(id: string, text: string): void {
   toolCards.get(id)?.();
   if (id && completedTools.has(id)) return;
   if (id) completedTools.add(id);
-  const body = addTurn("Действие", "");
+  const body = addTurn(t("chat.action"), "");
   const urls = /https?:\/\/[^\s<>]+/g;
   let from = 0;
   for (const match of text.matchAll(urls)) {
@@ -427,18 +420,18 @@ function askTool(pending: PendingTool): void {
   if (!client || !id || toolCards.has(id) || completedTools.has(id)) return;
   const currentClient = client;
   const currentSession = sessionId;
-  const text = addTurn("Подтверждение действия", pending.human_readable_action || pending.tool);
+  const text = addTurn(t("tool.title"), pending.human_readable_action || pending.tool);
   const actions = document.createElement("div");
   actions.className = "turn__actions";
   const approve = document.createElement("button");
   const reject = document.createElement("button");
   approve.className = "button button--warn button--small";
   reject.className = "button button--small";
-  approve.textContent = "Подтвердить";
-  reject.textContent = "Отклонить";
+  approve.textContent = t("tool.approve");
+  reject.textContent = t("tool.reject");
   const strongFactor = pending.required_method === "pin" || pending.required_method === "biometric";
   approve.disabled = strongFactor;
-  if (strongFactor) text.textContent += "\nНужно подтверждение PIN или биометрией на устройстве с поддержкой этой проверки.";
+  if (strongFactor) text.textContent += `\n${t("tool.strong")}`;
   actions.append(approve, reject);
   text.after(actions);
   let finished = false;
@@ -446,7 +439,7 @@ function askTool(pending: PendingTool): void {
   const expiry = Date.parse(pending.expires_at);
   const expire = () => {
     finish();
-    text.textContent += "\nСрок подтверждения истёк. Повторите запрос.";
+    text.textContent += `\n${t("tool.expired")}`;
   };
   const remaining = () => Number.isFinite(expiry) ? Math.max(0, expiry - Date.now()) : 120000;
   let timer = window.setTimeout(expire, remaining());
@@ -463,7 +456,7 @@ function askTool(pending: PendingTool): void {
       showToolResult(id, result.result);
     } catch (error) {
       if (client !== currentClient || sessionId !== currentSession) return;
-      addTurn("Ошибка подтверждения", String(error), "turn--error");
+      addTurn(t("chat.confirmError"), String(error), "turn--error");
       if (!finished) {
         approve.disabled = strongFactor; reject.disabled = false;
         timer = window.setTimeout(expire, remaining());
@@ -496,7 +489,7 @@ function renderInferenceDecision(decision?: InferenceDecision): void {
   latestLLMDecision = decision;
   el("runtime-model").textContent = decision.model_family || decision.model || decision.provider_id;
   el("runtime-backend").textContent = decision.backend || "auto";
-  el("runtime-reason").textContent = decision.reason || "Выбрано без дополнительного пояснения.";
+  el("runtime-reason").textContent = decision.reason || t("runtime.noReason");
   el("bar-runtime").textContent = `${decision.model_family || decision.model || decision.provider_id} · ${decision.backend || "auto"}`;
   el("bar-llm").textContent = decision.provider_id;
 }
@@ -522,41 +515,41 @@ function renderInference(status: InferenceStatus): void {
     modelSelect.replaceChildren();
     const auto = document.createElement("option");
     auto.value = "";
-    auto.textContent = "Автовыбор";
+    auto.textContent = t("runtime.autoPick");
     modelSelect.append(auto);
     for (const family of families) {
       const option = document.createElement("option");
       option.value = family;
       const variants = status.models.filter((m) => m.kind === "llm" && (m.model_family || m.model) === family);
       const backends = Array.from(new Set(variants.map((m) => m.backend || "auto"))).join("/");
-      option.textContent = `${family} · ${variants.some((m) => m.local === false) ? "внешняя модель ↗" : backends}`;
+      option.textContent = `${family} · ${variants.some((m) => m.local === false) ? t("runtime.remoteOption") : backends}`;
       modelSelect.append(option);
     }
     modelSelect.dataset.signature = signature;
   }
   modelSelect.value = prefs.locked_model || "";
 
-  const t = status.telemetry;
-  el("runtime-cpu").textContent = formatPercent(t.cpu_percent);
-  el("runtime-gpu").textContent = formatPercent(t.gpu_percent);
-  el("runtime-ram").textContent = t.ram_free_mb > 0 ? `${t.ram_free_mb} MB free` : "—";
-  el("runtime-vram").textContent = t.vram_free_mb > 0 ? `${t.vram_free_mb} MB free` : "—";
-  el("runtime-game").textContent = t.game_active ? (t.foreground_process || "active") : "нет";
-  el("runtime-fps").textContent = t.fps && t.fps > 0 ? t.fps.toFixed(0) : "—";
+  const tm = status.telemetry;
+  el("runtime-cpu").textContent = formatPercent(tm.cpu_percent);
+  el("runtime-gpu").textContent = formatPercent(tm.gpu_percent);
+  el("runtime-ram").textContent = tm.ram_free_mb > 0 ? t("runtime.free", { mb: tm.ram_free_mb }) : "—";
+  el("runtime-vram").textContent = tm.vram_free_mb > 0 ? t("runtime.free", { mb: tm.vram_free_mb }) : "—";
+  el("runtime-game").textContent = tm.game_active ? (tm.foreground_process || t("runtime.active")) : t("runtime.noGame");
+  el("runtime-fps").textContent = tm.fps && tm.fps > 0 ? tm.fps.toFixed(0) : "—";
   const lastLLM = status.last_llm_decision ?? (status.last_decision?.kind === "llm" ? status.last_decision : undefined) ?? latestLLMDecision;
   if (lastLLM) {
     renderInferenceDecision(lastLLM);
     const active = latestLLMDecision ?? lastLLM;
     if (prefs.locked_model && prefs.locked_model !== (active.model_family || active.model)) {
-      el("runtime-reason").textContent = `Выбрана ${prefs.locked_model}; последний вызов был на ${active.model_family || active.model || active.provider_id}. Новая модель применится при следующем запросе.`;
+      el("runtime-reason").textContent = t("runtime.pendingSwitch", { locked: prefs.locked_model, active: active.model_family || active.model || active.provider_id });
     }
   } else {
-    el("runtime-model").textContent = "ещё не вызывалась";
+    el("runtime-model").textContent = t("runtime.notCalled");
     el("runtime-backend").textContent = "—";
     el("runtime-reason").textContent = prefs.locked_model
-      ? `Выбрана ${prefs.locked_model}. Рабочая модель появится после первого запроса.`
-      : "Рабочая модель появится после первого запроса.";
-    el("bar-runtime").textContent = "ожидает вызова";
+      ? t("runtime.lockedPending", { locked: prefs.locked_model })
+      : t("runtime.firstRequest");
+    el("bar-runtime").textContent = t("runtime.waiting");
   }
 }
 
@@ -573,14 +566,14 @@ async function refreshInference(): Promise<void> {
   } catch {
     if (client !== currentClient || !sessionId) return;
     setInferenceControlsEnabled(false);
-    el("bar-runtime").textContent = "выключен";
-    el("runtime-reason").textContent = "Не удалось получить состояние AI Runtime.";
+    el("bar-runtime").textContent = t("runtime.off");
+    el("runtime-reason").textContent = t("runtime.statusFailed");
   }
 }
 
 async function saveInferencePreferences(): Promise<void> {
   if (!client || !inferenceAvailable) {
-    el("runtime-reason").textContent = "Сначала подключите ядро, затем выбирайте модель.";
+    el("runtime-reason").textContent = t("runtime.connectFirst");
     return;
   }
   const mode = el<HTMLSelectElement>("inference-mode").value as InferenceStatus["preferences"]["mode"];
@@ -641,7 +634,7 @@ function handleFrame(frame: Frame): void {
     }
 
     case "transcript.final":
-      addTurn("Вы", String(payload.text ?? ""));
+      addTurn(t("chat.you"), String(payload.text ?? ""), "turn--user");
       break;
 
     case "tts.chunk":
@@ -651,7 +644,7 @@ function handleFrame(frame: Frame): void {
     case "avatar.expression": {
       const label = String(payload.label ?? "neutral");
       const chip = el("emotion-label");
-      chip.textContent = EMOTION_LABELS[label] ?? "";
+      chip.textContent = emotionLabel(label);
       chip.hidden = !chip.textContent;
       stage.react(label, String(payload.expression ?? "exp_neutral"));
       break;
@@ -662,7 +655,7 @@ function handleFrame(frame: Frame): void {
       break;
 
     case "data.manifest":
-      addLedgerEntry(String(payload.provider ?? "модель"),
+      addLedgerEntry(String(payload.provider ?? t("ledger.model")),
         Array.isArray(payload.included_categories) ? payload.included_categories.map(String) : [],
         Array.isArray(payload.excluded_categories) ? payload.excluded_categories.map(String) : [],
         payload.remote === true);
@@ -681,7 +674,7 @@ function handleFrame(frame: Frame): void {
       break;
 
     case "proactive.reminder":
-      addTurn("Напоминание", String(payload.text ?? "Сработал таймер"));
+      addTurn(t("chat.reminder"), String(payload.text ?? t("chat.timer")));
       break;
 
     case "barge_in":
@@ -698,7 +691,7 @@ function handleFrame(frame: Frame): void {
       break;
 
     case "error":
-      addTurn("Ошибка", `${payload.stage}: ${payload.error}`, "turn--error");
+      addTurn(t("chat.error"), `${payload.stage}: ${payload.error}`, "turn--error");
       setState("error");
       break;
   }
@@ -775,7 +768,7 @@ async function connect(explicitSession = query.get("session") ?? "", automatic =
   setSensorsEnabled(false);
   microphone.stop(false);
   if (inferenceTimer !== undefined) window.clearInterval(inferenceTimer);
-  el("connect").textContent = "Подключение…";
+  el("connect").textContent = t("app.connecting");
 
   client = new CoreClient(base, token);
   const currentClient = client;
@@ -783,7 +776,8 @@ async function connect(explicitSession = query.get("session") ?? "", automatic =
     const status = await currentClient.status();
     if (client !== currentClient) return;
     renderProviders(status.providers);
-    el("bar-core").textContent = `подключено · ${status.version}`;
+    coreVersion = status.version;
+    el("bar-core").textContent = t("conn.connected", { version: status.version });
 
     const identities = await currentClient.identities();
     if (client !== currentClient) return;
@@ -809,8 +803,8 @@ async function connect(explicitSession = query.get("session") ?? "", automatic =
       setInferenceControlsEnabled(false);
       setSensorsEnabled(false);
       modelSettings?.setConnected(false);
-      el("bar-core").textContent = "соединение потеряно";
-      el("connect").textContent = "Подключиться";
+      el("bar-core").textContent = t("conn.lost");
+      el("connect").textContent = t("app.connect");
       el("connect").hidden = false;
       setState("error");
       scheduleReconnect();
@@ -827,7 +821,7 @@ async function connect(explicitSession = query.get("session") ?? "", automatic =
     void currentClient.pendingTools().then(pending => {
       if (client === currentClient && sessionId) pending.forEach(askTool);
     }).catch(error => {
-      if (client === currentClient && sessionId) addTurn("Ошибка подтверждений", String(error), "turn--error");
+      if (client === currentClient && sessionId) addTurn(t("chat.confirmationsError"), String(error), "turn--error");
     });
     await refreshInference();
     await modelSettings?.refresh();
@@ -842,18 +836,18 @@ async function connect(explicitSession = query.get("session") ?? "", automatic =
     setInferenceControlsEnabled(false);
     setSensorsEnabled(false);
     modelSettings?.setConnected(false);
-    el("connect").textContent = "Подключиться";
+    el("connect").textContent = t("app.connect");
     el("connect").hidden = false;
     // Silent retries while the core is down; one visible error otherwise.
-    if (!automatic) addTurn("Ошибка", String(error), "turn--error");
+    if (!automatic) addTurn(t("chat.error"), String(error), "turn--error");
     if (isUnauthorized(error)) {
       // A paired device token can be revoked or replaced by a fresh core
       // launch. Do not keep retrying it on every click.
       localStorage.removeItem("yui.token");
-      el("bar-core").textContent = "токен устарел";
-      el("runtime-reason").textContent = "Токен отклонён ядром. Откройте новую ссылку подключения Yui.";
+      el("bar-core").textContent = t("conn.tokenExpired");
+      el("runtime-reason").textContent = t("conn.tokenRejected");
     } else {
-      el("bar-core").textContent = "не подключено";
+      el("bar-core").textContent = t("conn.disconnected");
       if (automatic) scheduleReconnect();
     }
   }
@@ -902,7 +896,7 @@ async function detach(role: "avatar" | "chat"): Promise<void> {
   try {
     await openDetached(role, sessionId, prefs().avatarOnTop);
   } catch (error) {
-    addTurn("Окно", String(error instanceof Error ? error.message : error), "turn--error");
+    addTurn(t("app.window"), String(error instanceof Error ? error.message : error), "turn--error");
   }
 }
 
@@ -918,7 +912,7 @@ el<HTMLFormElement>("memory-add").addEventListener("submit", event => {
     input.value = "";
     addMemory(item as unknown as Record<string, unknown>);
   }).catch(error => {
-    el("memory-empty").textContent = `Не удалось сохранить: ${String(error)}`;
+    el("memory-empty").textContent = t("memory.saveFailed", { error: String(error) });
     el("memory-empty").classList.remove("pane--hidden");
   }).finally(() => { input.disabled = !sessionId; });
 });
@@ -928,7 +922,7 @@ el("detach-chat").addEventListener("click", () => void detach("chat"));
 el("attach-avatar").addEventListener("click", () => void closeDetached(hub, "avatar"));
 el("attach-chat").addEventListener("click", () => void closeDetached(hub, "chat"));
 el<HTMLButtonElement>("new-chat").addEventListener("click", () => {
-  if (confirm("Начать новый разговор? Текущий будет завершён, память сохранится.")) void newConversation();
+  if (confirm(t("app.newChatConfirm"))) void newConversation();
 });
 
 const composerInput = el<HTMLTextAreaElement>("composer-input");
@@ -951,11 +945,11 @@ el<HTMLFormElement>("composer").addEventListener("submit", (event) => {
   try {
     void stage.speech.resume();
     client?.sendText(text);
-    addTurn("Вы", text);
+    addTurn(t("chat.you"), text, "turn--user");
     hub.shareUserText(text);
     composerInput.value = "";
     autosize();
-  } catch (error) { addTurn("Ошибка", String(error), "turn--error"); }
+  } catch (error) { addTurn(t("chat.error"), String(error), "turn--error"); }
 });
 
 setInferenceControlsEnabled(false);
@@ -988,7 +982,7 @@ async function renderPairingQr(): Promise<void> {
   if (!pairingCode) return;
   const raw = el<HTMLInputElement>("pair-host").value.trim();
   if (!raw) {
-    help.textContent = "Введите HTTPS-адрес компьютера из окна запуска, чтобы показать QR-код.";
+    help.textContent = t("pair.needHost");
     return;
   }
   try {
@@ -996,12 +990,12 @@ async function renderPairingQr(): Promise<void> {
     if (url.protocol !== "https:" || !url.hostname ||
         ["0.0.0.0", "::", "localhost", "127.0.0.1"].includes(url.hostname) ||
         url.username || url.password || url.pathname !== "/" || url.search || url.hash) {
-      throw new Error("Укажите доступный HTTPS-адрес компьютера без пути.");
+      throw new Error(t("pair.badHost"));
     }
     await QRCode.toCanvas(canvas, JSON.stringify({v: 1, host: url.origin, code: pairingCode, name: "Yui Core"}),
       {width: 220, margin: 2});
     canvas.hidden = false;
-    help.textContent = "Отсканируйте QR-код в приложении Yui на телефоне.";
+    help.textContent = t("pair.scan");
     localStorage.setItem("yui.pair-host", url.origin);
   } catch (error) {
     help.textContent = String(error);
@@ -1025,11 +1019,11 @@ async function showPairing(): Promise<void> {
   if (local) {
     try {
       const { base, token } = readConnection();
-      if (!token) throw new Error("Откройте ссылку с токеном из окна запуска Yui на компьютере.");
+      if (!token) throw new Error(t("pair.needToken"));
       const result = await new CoreClient(base, token).request<{code: string; expires_at: string}>("/v1/pair/start", {method:"POST", body:"{}"});
       pairingCode = result.code;
       el("pair-code").textContent = result.code;
-      el("pair-help").textContent = `На телефоне откройте HTTPS-адрес компьютера из окна запуска. Код действует до ${new Date(result.expires_at).toLocaleString()}.`;
+      el("pair-help").textContent = t("pair.codeValid", { time: new Date(result.expires_at).toLocaleString() });
       await renderPairingQr();
     } catch (error) { el("pair-error").textContent = String(error); }
   }
@@ -1044,14 +1038,14 @@ el<HTMLFormElement>("pair-form").onsubmit = async (event) => {
   try {
     const response = await fetch(`${readConnection().base}/v1/pair/claim`, {
       method: "POST", headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({code: el<HTMLInputElement>("pair-input").value.trim(), name: "Телефон · браузер", kind:"web", capabilities:["text","audio","camera"]}),
+      body: JSON.stringify({code: el<HTMLInputElement>("pair-input").value.trim(), name: t("pair.deviceName"), kind:"web", capabilities:["text","audio","camera"]}),
     });
     if (!response.ok) {
       if (response.status === 403) {
-        throw new Error("Одноразовый код недействителен, уже использован или истёк. Получите новый код на компьютере.");
+        throw new Error(t("pair.badCode"));
       }
       const detail = await response.text();
-      throw new Error(`Сопряжение: ${detail || `ошибка ${response.status}`}`);
+      throw new Error(t("pair.failed", { detail: detail || t("pair.errorCode", { status: response.status }) }));
     }
     const result = await response.json() as {token:string};
     localStorage.setItem("yui.token", result.token);
@@ -1069,14 +1063,19 @@ const microphone = new Microphone(
       el("sensor-state").textContent = text;
       micButton.classList.toggle("icon-button--live", active);
       micButton.setAttribute("aria-pressed", String(active));
-      micButton.title = active ? "Выключить микрофон" : "Говорить";
+      micButton.title = active ? t("chat.micOff") : t("chat.speak");
+      micButton.setAttribute("aria-label", micButton.title);
+      micActive = active;
       document.body.classList.toggle("mic-on", active);
     },
     level: value => stage.setMicLevel(value),
-    error: message => addTurn("Ошибка микрофона", message, "turn--error"),
+    error: message => addTurn(t("chat.micError"), message, "turn--error"),
     speechStart: () => { void stage.speech.resume(); },
   },
-  () => ({ sensitivity: prefs().vadSensitivity, bargeIn: prefs().bargeIn, isAssistantSpeaking: () => assistantSpeaking || stage.speech.speaking }),
+  () => ({
+    sensitivity: prefs().vadSensitivity, bargeIn: prefs().bargeIn, engine: prefs().vadEngine,
+    isAssistantSpeaking: () => assistantSpeaking || stage.speech.speaking,
+  }),
 );
 
 async function startMicrophone(): Promise<void> {
@@ -1089,7 +1088,7 @@ micButton.onclick = () => {
   else void startMicrophone();
 };
 onPrefs((_, changed) => {
-  if (changed.includes("micMode") && microphone.active) {
+  if ((changed.includes("micMode") || changed.includes("vadEngine")) && microphone.active) {
     microphone.stop(false);
     void startMicrophone();
   }
@@ -1108,7 +1107,7 @@ el<HTMLInputElement>("camera").onchange = async (event) => {
   const currentSession = sessionId;
   let bitmap: ImageBitmap | undefined;
   let objectUrl: string | undefined;
-  const progress = addTurn("Фото", "Подготовка фотографии…");
+  const progress = addTurn(t("photo.title"), t("photo.preparing"));
   try {
     let image: HTMLImageElement | undefined;
     if (typeof createImageBitmap === "function") {
@@ -1119,7 +1118,7 @@ el<HTMLInputElement>("camera").onchange = async (event) => {
       image = new Image();
       await new Promise<void>((resolve, reject) => {
         image!.onload = () => resolve();
-        image!.onerror = () => reject(new Error("Не удалось прочитать фотографию."));
+        image!.onerror = () => reject(new Error(t("photo.unreadable")));
         image!.src = objectUrl!;
       });
     }
@@ -1130,17 +1129,17 @@ el<HTMLInputElement>("camera").onchange = async (event) => {
     const canvas = document.createElement("canvas");
     canvas.width = Math.max(1, Math.round(width * scale)); canvas.height = Math.max(1, Math.round(height * scale));
     const context = canvas.getContext("2d");
-    if (!context) throw new Error("Браузер не поддерживает обработку фотографий.");
+    if (!context) throw new Error(t("photo.unsupported"));
     context.drawImage(source, 0, 0, canvas.width, canvas.height);
-    if (client !== currentClient || sessionId !== currentSession) { progress.textContent = "Отправка отменена: соединение изменилось."; return; }
-    progress.textContent = "Фото отправляется…";
+    if (client !== currentClient || sessionId !== currentSession) { progress.textContent = t("photo.cancelled"); return; }
+    progress.textContent = t("photo.sending");
     const result = await currentClient.request<{description:string}>(`/v1/sessions/${currentSession}/vision`, {
-      method:"POST", body:JSON.stringify({image_b64:canvas.toDataURL("image/jpeg",0.8).split(",")[1], mime:"image/jpeg", question:"Опиши, что видишь на фотографии. Ответь по-русски."}),
+      method:"POST", body:JSON.stringify({image_b64:canvas.toDataURL("image/jpeg",0.8).split(",")[1], mime:"image/jpeg", question:t("photo.question")}),
     });
     progress.textContent = client === currentClient && sessionId === currentSession
-      ? result.description || "Модель не вернула описание. Попробуйте другое фото."
-      : "Соединение изменилось. Отправьте фотографию повторно.";
-  } catch (error) { progress.textContent = `Не удалось отправить фото: ${String(error)}`; }
+      ? result.description || t("photo.empty")
+      : t("photo.changed");
+  } catch (error) { progress.textContent = t("photo.failed", { error: String(error) }); }
   finally {
     bitmap?.close();
     if (objectUrl) URL.revokeObjectURL(objectUrl);
@@ -1150,6 +1149,37 @@ el<HTMLInputElement>("camera").onchange = async (event) => {
 document.addEventListener("visibilitychange", () => {
   // Push-to-talk never records in the background; hands-free is an explicit choice.
   if (document.hidden && microphone.active && prefs().micMode === "push") microphone.stop(false);
+});
+/** Text that JavaScript owns (not data-i18n) follows the language too. */
+function renderDynamicText(): void {
+  el("state-label").textContent = currentState === "offline" ? t("state.offline") : stateLabel(currentState);
+  updatePrivacyTag(lastInferenceStatus?.preferences);
+  el("connect").textContent = t("app.connect");
+  el("bar-core").textContent = coreVersion && sessionId ? t("conn.connected", { version: coreVersion }) : t("conn.disconnected");
+  if (!micActive) el("sensor-state").textContent = t("mic.off");
+  micButton.title = micActive ? t("chat.micOff") : t("chat.speak");
+  micButton.setAttribute("aria-label", micButton.title);
+  if (lastInferenceStatus) renderInference(lastInferenceStatus);
+  else el("runtime-reason").textContent = t("runtime.none");
+  el("figure-fallback").textContent = t("avatar.loading");
+  el("memory-empty").textContent = t("memory.emptyNew");
+  el("ledger-empty").textContent = t("privacy.noCalls");
+  el("model-add-hint").textContent = t("addModel.hintLocal");
+  el("pair-help").textContent = t("pair.help");
+}
+renderDynamicText();
+document.body.classList.toggle("tauri", isTauri());
+const syncTrayLanguage = () => void tauriInvoke("set_tray_language", { lang: document.documentElement.lang }).catch(() => undefined);
+syncTrayLanguage();
+// Ctrl+Shift+Space anywhere in the system (and the tray item) toggles the mic.
+if (view === "main") void tauriListen("yui://ptt", () => micButton.click());
+onLang(() => {
+  renderDynamicText();
+  syncTrayLanguage();
+  if (sessionId) { void refreshMemory(); }
+});
+onPrefs((next, changed) => {
+  if (changed.includes("lang")) setLang(next.lang === "auto" ? detectLang() : next.lang as "ru" | "en");
 });
 syncWindows();
 void (async () => {

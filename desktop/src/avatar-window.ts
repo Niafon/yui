@@ -6,12 +6,16 @@
 
 import { CoreClient, type Frame } from "./api";
 import { applyAppearance, onPrefs, prefs, updatePrefs } from "./prefs";
+import { applyI18n, detectLang, setLang, t } from "./i18n";
 import { Stage } from "./stage";
-import { WindowHub, currentWindow, isTauri } from "./windows";
+import { WindowHub, currentWindow, isTauri, tauriInvoke, tauriListen } from "./windows";
 
 const el = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
 applyAppearance();
 document.documentElement.dataset.backdrop = "transparent";
+const resolveLang = () => (prefs().lang === "auto" ? detectLang() : prefs().lang as "ru" | "en");
+setLang(resolveLang());
+applyI18n();
 
 const stage = new Stage({
   frame: el("stage-frame"),
@@ -56,7 +60,7 @@ async function join(target: string): Promise<void> {
       ({ base, token } = await invoke<{ base: string; token: string }>("core_endpoint"));
     } catch { /* not available */ }
   }
-  if (!token || !target) { status.textContent = "Подключите Юи в основном окне."; return; }
+  if (!token || !target) { status.textContent = t("conn.connectInMain"); return; }
   session = target;
   client?.close();
   const current = new CoreClient(base, token);
@@ -69,13 +73,13 @@ async function join(target: string): Promise<void> {
       if (client !== current) return;
       stage.stopSpeech();
       stage.setState("error");
-      status.textContent = "Соединение потеряно";
+      status.textContent = t("conn.lost");
       session = "";
     });
     status.textContent = "";
   } catch (error) {
     if (client === current) {
-      status.textContent = "Нет соединения с ядром, повторяю…";
+      status.textContent = t("conn.retrying");
       console.warn("avatar window join failed", error);
       session = "";
     }
@@ -86,7 +90,7 @@ const initial = new URLSearchParams(location.search).get("session") ?? "";
 void (async () => {
   const target = initial || await hub.discover();
   if (target) await join(target);
-  else status.textContent = "Подключите Юи в основном окне.";
+  else status.textContent = t("conn.connectInMain");
 })();
 
 // After the core restarts, rejoin as soon as the session is reachable again.
@@ -113,6 +117,7 @@ async function applyOnTop(): Promise<void> {
 topButton.addEventListener("click", () => updatePrefs({ avatarOnTop: !prefs().avatarOnTop }));
 onPrefs((next, changed) => {
   if (changed.includes("avatarOnTop")) void applyOnTop();
+  if (changed.includes("lang")) setLang(resolveLang());
   if (changed.some(key => key === "theme" || key === "accent")) { applyAppearance(next); document.documentElement.dataset.backdrop = "transparent"; }
 });
 void applyOnTop();
@@ -125,4 +130,15 @@ el("stage-frame").addEventListener("pointerdown", event => {
 el("pet-close").addEventListener("click", () => {
   void currentWindow().then(win => (win ? win.close() : window.close()));
 });
+// Click-through: the window ignores the mouse until Ctrl+Shift+Y or the tray.
+const throughButton = el<HTMLButtonElement>("pet-through");
+throughButton.hidden = !isTauri();
+const showThrough = (on: boolean) => {
+  el("pet-through-note").hidden = !on;
+  document.body.classList.toggle("click-through", on);
+};
+throughButton.addEventListener("click", () => void tauriInvoke("set_click_through", { enabled: true }));
+void tauriListen<boolean>("yui://click-through", showThrough);
+void tauriInvoke<boolean>("click_through").then(on => showThrough(Boolean(on)));
+
 window.addEventListener("beforeunload", () => { client?.close(); stage.dispose(); hub.close(); });

@@ -6,6 +6,7 @@
 
 import type { CoreClient, Identity, IdentityPatch } from "./api";
 import { importAvatar, listAvatars, removeAvatar } from "./avatar/catalog";
+import { has, onLang, t, type Key } from "./i18n";
 import { parseCharacterCard } from "./character-card";
 import { ACCENTS, applyAppearance, onPrefs, prefs, updatePrefs, type Prefs } from "./prefs";
 
@@ -23,10 +24,7 @@ export interface SettingsContext {
   coreBase(): string;
 }
 
-const TRAITS: Record<string, string> = {
-  warmth: "Теплота", curiosity: "Любопытство", playfulness: "Игривость",
-  directness: "Прямота", assertiveness: "Настойчивость", calmness: "Спокойствие",
-};
+const traitLabel = (name: string): string => (has(`trait.${name}`) ? t(`trait.${name}` as Key) : name);
 
 const byId = <T extends HTMLElement>(id: string): T => {
   const node = document.getElementById(id);
@@ -140,7 +138,7 @@ export function initSettings(context: SettingsContext) {
     const connected = Boolean(context.client() && identity);
     save.disabled = !connected;
     for (const control of form.querySelectorAll<HTMLInputElement>("input, select, textarea")) control.disabled = !connected;
-    if (!identity) { status.textContent = "Подключите ядро, чтобы изменить персонажа."; return; }
+    if (!identity) { status.textContent = t("character.connect"); return; }
     if (form.dataset.identity === `${identity.id}`) return; // keep unsaved edits
     form.dataset.identity = identity.id;
     byId<HTMLInputElement>("character-name").value = identity.name;
@@ -153,7 +151,7 @@ export function initSettings(context: SettingsContext) {
     traitBox.replaceChildren();
     for (const [name, value] of Object.entries(identity.traits ?? {})) {
       const label = make("label", "field");
-      const caption = make("span", "field__label", `${TRAITS[name] ?? name} `);
+      const caption = make("span", "field__label", `${traitLabel(name)} `);
       const output = make("output", "", percent(value));
       caption.append(output);
       const input = make("input");
@@ -163,7 +161,7 @@ export function initSettings(context: SettingsContext) {
       label.append(caption, input);
       traitBox.append(label);
     }
-    status.textContent = "Изменения применятся к следующим ответам.";
+    status.textContent = t("character.applies");
   }
 
   form.addEventListener("submit", event => {
@@ -183,14 +181,14 @@ export function initSettings(context: SettingsContext) {
       traits,
     };
     save.disabled = true;
-    status.textContent = "Сохраняю…";
+    status.textContent = t("character.saving");
     void client.updateIdentity(identity.id, patch).then(updated => {
       if (context.client() !== client) return;
       form.dataset.identity = "";
       context.onIdentity(updated);
       renderCharacter();
-      status.textContent = "Сохранено.";
-    }).catch(error => { status.textContent = `Не удалось сохранить: ${String(error)}`; })
+      status.textContent = t("character.saved");
+    }).catch(error => { status.textContent = t("character.saveFailed", { error: String(error) }); })
       .finally(() => { save.disabled = !context.client(); });
   });
 
@@ -202,7 +200,7 @@ export function initSettings(context: SettingsContext) {
       byId<HTMLInputElement>("character-name").value = card.name;
       if (card.style) byId<HTMLTextAreaElement>("character-style").value = card.style;
       if (card.relationship) byId<HTMLInputElement>("character-relationship").value = card.relationship;
-      status.textContent = `Карточка «${card.name}» загружена. Проверьте поля и сохраните.`;
+      status.textContent = t("character.cardLoaded", { name: card.name });
     }).catch(error => { status.textContent = String(error instanceof Error ? error.message : error); })
       .finally(() => { input.value = ""; });
   });
@@ -220,12 +218,12 @@ export function initSettings(context: SettingsContext) {
       pick.setAttribute("role", "radio");
       pick.setAttribute("aria-checked", String(prefs().avatar === entry.id));
       pick.append(make("span", `avatar-card__badge avatar-card__badge--${entry.kind}`, entry.kind === "vrm" ? "3D" : "2D"),
-        make("strong", "", entry.label), make("small", "", entry.note ?? ""));
+        make("strong", "", entry.label), make("small", "", entry.id === "mao" ? t("avatar.noteVowels") : entry.note ?? ""));
       pick.addEventListener("click", () => { updatePrefs({ avatar: entry.id }); void renderAvatars(); });
       card.append(pick);
       if (!entry.builtin) {
-        card.append(iconButton("trash", "Удалить модель", () => {
-          if (!confirm(`Удалить «${entry.label}» из этого браузера?`)) return;
+        card.append(iconButton("trash", t("avatar.delete"), () => {
+          if (!confirm(t("avatar.deleteConfirm", { name: entry.label }))) return;
           void removeAvatar(entry.id).then(() => {
             if (prefs().avatar === entry.id) updatePrefs({ avatar: "shino" });
             void renderAvatars();
@@ -239,9 +237,9 @@ export function initSettings(context: SettingsContext) {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) return;
-    importStatus.textContent = "Импортирую…";
+    importStatus.textContent = t("avatar.importing");
     void importAvatar(file).then(entry => {
-      importStatus.textContent = `Добавлено: ${entry.label}`;
+      importStatus.textContent = t("avatar.imported", { name: entry.label });
       updatePrefs({ avatar: entry.id });
       void renderAvatars();
     }).catch(error => { importStatus.textContent = String(error instanceof Error ? error.message : error); })
@@ -277,27 +275,27 @@ export function initSettings(context: SettingsContext) {
     const client = context.client();
     const list = byId("grants-list");
     const empty = byId("grants-empty");
-    if (!client) { list.replaceChildren(); empty.hidden = false; empty.textContent = "Подключите ядро."; return; }
+    if (!client) { list.replaceChildren(); empty.hidden = false; empty.textContent = t("privacy.connect"); return; }
     try {
       const grants = (await client.grants()).filter(grant => !grant.expires_at || Date.parse(grant.expires_at) > Date.now());
       if (context.client() !== client) return;
       list.replaceChildren();
       empty.hidden = grants.length > 0;
-      empty.textContent = "Постоянных разрешений нет.";
+      empty.textContent = t("privacy.noGrants");
       for (const grant of grants) {
         const item = make("li");
         item.dataset.remote = String(grant.decision === "allow");
         const text = make("div");
         text.append(make("div", "ledger__meta", `${grant.subject_id || grant.subject_kind} · ${grant.action}`),
-          make("div", "", `${grant.decision === "allow" ? "Разрешено" : "Запрещено"}: ${grant.category}`));
-        item.append(text, iconButton("trash", "Отозвать", () => {
+          make("div", "", t(grant.decision === "allow" ? "privacy.allowed" : "privacy.denied", { category: grant.category })));
+        item.append(text, iconButton("trash", t("privacy.revoke"), () => {
           void client.revokeGrant(grant.id).then(renderGrants).catch(error => { empty.hidden = false; empty.textContent = String(error); });
         }));
         list.append(item);
       }
     } catch (error) {
       empty.hidden = false;
-      empty.textContent = `Не удалось загрузить разрешения: ${String(error)}`;
+      empty.textContent = t("privacy.grantsFailed", { error: String(error) });
     }
   }
 
@@ -306,33 +304,40 @@ export function initSettings(context: SettingsContext) {
     const client = context.client();
     const list = byId("devices-list");
     const empty = byId("devices-empty");
-    if (!client) { list.replaceChildren(); empty.hidden = false; empty.textContent = "Подключите ядро, чтобы увидеть устройства."; return; }
+    if (!client) { list.replaceChildren(); empty.hidden = false; empty.textContent = t("devices.connect"); return; }
     try {
       const devices = (await client.devices()).filter(device => !device.revoked_at);
       if (context.client() !== client) return;
       list.replaceChildren();
       empty.hidden = devices.length > 0;
-      empty.textContent = "Подключённых устройств нет.";
+      empty.textContent = t("devices.none");
       for (const device of devices) {
         const item = make("li");
         const seen = Date.parse(device.last_seen_at);
         const text = make("div");
-        text.append(make("div", "ledger__meta", `${device.kind} · сопряжено ${new Date(device.paired_at).toLocaleDateString()}`),
-          make("div", "", `${device.name}${Number.isFinite(seen) && seen > 0 ? ` · был ${new Date(seen).toLocaleString()}` : ""}`));
-        item.append(text, iconButton("trash", "Отключить устройство", () => {
-          if (!confirm(`Отключить «${device.name}»? Устройству понадобится новое сопряжение.`)) return;
+        text.append(make("div", "ledger__meta", t("devices.paired", { kind: device.kind, date: new Date(device.paired_at).toLocaleDateString() })),
+          make("div", "", `${device.name}${Number.isFinite(seen) && seen > 0 ? t("devices.seen", { time: new Date(seen).toLocaleString() }) : ""}`));
+        item.append(text, iconButton("trash", t("devices.revoke"), () => {
+          if (!confirm(t("devices.revokeConfirm", { name: device.name }))) return;
           void client.revokeDevice(device.id).then(renderDevices).catch(error => { empty.hidden = false; empty.textContent = String(error); });
         }));
         list.append(item);
       }
     } catch (error) {
       empty.hidden = false;
-      empty.textContent = `Не удалось загрузить устройства: ${String(error)}`;
+      empty.textContent = t("devices.loadFailed", { error: String(error) });
     }
   }
 
   // Interface ------------------------------------------------------------
   select("ui-theme", "theme");
+  select("ui-lang", "lang");
+  select("vad-engine", "vadEngine");
+  // Re-render JS-built lists in the new language.
+  onLang(() => {
+    form.dataset.identity = "";
+    if (dialog.open) show(currentTab);
+  });
   check("ui-enter", "sendOnEnter");
   check("ui-ribbon", "showRibbon");
   const swatches = byId("ui-accents");

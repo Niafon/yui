@@ -37,4 +37,6 @@ module is MIT-licensed by pixiv.
 
 The lip-sync profile in desktop/public/assets/lipsync/profile.json and the
 wlipsync runtime are MIT-licensed (copyright 2021 hecomi, 2024 Noeri Huisman).
-Desktop runtime libraries: markdown-it and fflate (MIT), idb-keyval (Apache-2.0).
+Desktop runtime libraries: markdown-it and fflate (MIT), idb-keyval (Apache-2.0),
+@ricky0123/vad-web (ISC) with the Silero VAD model (MIT, Silero Team) and
+onnxruntime-web (MIT, Microsoft), copied into the build from node_modules.

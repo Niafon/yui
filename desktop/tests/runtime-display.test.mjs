@@ -3,6 +3,9 @@ import test from 'node:test';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import ts from 'typescript';
+import { load } from './bundle.mjs';
+
+const { t, has } = await load('i18n.ts');
 
 const main = readFileSync(new URL('../src/main.ts', import.meta.url), 'utf8');
 const start = main.indexOf('function renderInferenceDecision(');
@@ -22,6 +25,7 @@ function stage() {
     return nodes.get(id);
   };
   const context = vm.createContext({
+    t, has,
     el, document: { createElement: () => ({}) },
     setInferenceControlsEnabled() {}, updatePrivacyTag() {}, formatPercent: value => `${value}%`,
     lastInferenceStatus: undefined, latestLLMDecision: undefined,
@@ -76,6 +80,7 @@ test('a selected external model changes the privacy indicator', () => {
   }).outputText;
   const tag = {};
   const context = vm.createContext({
+    t, has,
     el: () => tag,
     providerLocal: new Map([['deepseek', false]]),
     remoteDefaultProvider: false,

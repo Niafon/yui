@@ -7,6 +7,8 @@
  * priority: the avatar window (so lip sync is local), then main, then chat.
  */
 
+import { t, type Key } from "./i18n";
+
 export type WindowRole = "main" | "avatar" | "chat";
 
 const PRIORITY: Record<WindowRole, number> = { avatar: 3, main: 2, chat: 1 };
@@ -140,9 +142,9 @@ export class WindowHub {
 
 export const isTauri = (): boolean => typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
-const SIZES: Record<Exclude<WindowRole, "main">, { width: number; height: number; title: string }> = {
-  avatar: { width: 420, height: 640, title: "Yui — аватар" },
-  chat: { width: 420, height: 620, title: "Yui — чат" },
+const SIZES: Record<Exclude<WindowRole, "main">, { width: number; height: number; title: Key }> = {
+  avatar: { width: 420, height: 640, title: "app.avatarWindowTitle" },
+  chat: { width: 420, height: 620, title: "app.chatWindowTitle" },
 };
 
 /** Opens (or focuses) a detached window for the given role. */
@@ -157,7 +159,7 @@ export async function openDetached(role: Exclude<WindowRole, "main">, session: s
     const existing = await WebviewWindow.getByLabel(role);
     if (existing) { await existing.setFocus(); return; }
     const created = new WebviewWindow(role, {
-      url, title: size.title, width: size.width, height: size.height,
+      url, title: t(size.title), width: size.width, height: size.height,
       minWidth: 240, minHeight: 300, resizable: true,
       transparent: role === "avatar", decorations: role !== "avatar", shadow: role !== "avatar",
       alwaysOnTop: role === "avatar" ? onTop : false,
@@ -169,7 +171,7 @@ export async function openDetached(role: Exclude<WindowRole, "main">, session: s
     return;
   }
   const opened = window.open(url, `yui-${role}`, `popup,width=${size.width},height=${size.height}`);
-  if (!opened) throw new Error("Браузер заблокировал окно. Разрешите всплывающие окна для Yui.");
+  if (!opened) throw new Error(t("app.popupBlocked"));
   opened.focus();
 }
 
@@ -194,4 +196,18 @@ export async function closeDetached(hub: WindowHub, role: Exclude<WindowRole, "m
     if (existing) { await existing.close(); return; }
   }
   hub.requestClose(role);
+}
+
+/** Calls a Tauri command; resolves undefined outside the desktop shell. */
+export async function tauriInvoke<T>(command: string, args?: Record<string, unknown>): Promise<T | undefined> {
+  if (!isTauri()) return undefined;
+  const { invoke } = await import("@tauri-apps/api/core");
+  return invoke<T>(command, args);
+}
+
+/** Listens to a Tauri event; returns an unsubscribe function (no-op in a browser). */
+export async function tauriListen<T>(event: string, handler: (payload: T) => void): Promise<() => void> {
+  if (!isTauri()) return () => undefined;
+  const { listen } = await import("@tauri-apps/api/event");
+  return listen<T>(event, message => handler(message.payload));
 }

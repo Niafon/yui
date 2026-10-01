@@ -4,6 +4,8 @@
  * base64. Only text fields are read; nothing is executed or fetched.
  */
 
+import { t } from "./i18n";
+
 export interface CardFields { name: string; style: string; relationship: string; greeting: string }
 
 interface RawCard {
@@ -38,14 +40,14 @@ function readPngText(bytes: Uint8Array): string | undefined {
 }
 
 export async function parseCharacterCard(file: File): Promise<CardFields> {
-  if (file.size > 20 * 1024 * 1024) throw new Error("Файл карточки больше 20 МБ");
+  if (file.size > 20 * 1024 * 1024) throw new Error(t("card.tooBig"));
   const bytes = new Uint8Array(await file.arrayBuffer());
   const text = readPngText(bytes) ?? new TextDecoder().decode(bytes);
   let raw: RawCard;
-  try { raw = JSON.parse(text) as RawCard; } catch { throw new Error("Не удалось прочитать карточку: нужен .json или .png с данными персонажа"); }
+  try { raw = JSON.parse(text) as RawCard; } catch { throw new Error(t("card.unreadable")); }
   const card = raw.data && typeof raw.data === "object" ? { ...raw, ...raw.data } : raw;
   const name = clip(clean(card.name), 40);
-  if (!name) throw new Error("В карточке нет имени персонажа");
+  if (!name) throw new Error(t("card.noName"));
   const style = clip([clean(card.personality), clean(card.description)].filter(Boolean).join(". "), 600);
   return { name, style, relationship: clip(clean(card.scenario), 120), greeting: clean(card.first_mes) };
 }

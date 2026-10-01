@@ -52,3 +52,6 @@ desktop/public/yui-ca.crt
 *.jks
 *.keystore
 local.properties
+
+# tauri-build output
+desktop/src-tauri/gen/

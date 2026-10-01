@@ -3,6 +3,9 @@ import test from 'node:test';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import ts from 'typescript';
+import { load } from './bundle.mjs';
+
+const { t, has } = await load('i18n.ts');
 
 const main = readFileSync(new URL('../src/main.ts', import.meta.url), 'utf8');
 const start = main.indexOf('function addMemory(');
@@ -33,6 +36,7 @@ function stage() {
     audit: async () => [{ id: 'aud1', action: 'provider.call', reason: 'dialog_turn', provider: 'remote-llm', categories: ['current_text'], result: 'ok' }],
   };
   const context = vm.createContext({
+    t, has,
     el, document: { createElement: node }, client, identityId: 'owner',
     iconButton: (name, label, onClick) => { const button = node(); button.label = label; button.onClick = onClick; return button; },
     providerLocal: new Map([['remote-llm', false]]), ledgerLoaded: false,

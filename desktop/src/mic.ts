@@ -7,6 +7,8 @@
  * 16 kHz audio; the limit below follows the real context sample rate.
  */
 
+import { t } from "./i18n";
+
 export interface MicSink {
   sendAudio(pcm: ArrayBuffer): void;
   send(message: Record<string, unknown>): void;
@@ -22,7 +24,18 @@ export interface MicCallbacks {
   speechStart(): void;
 }
 
-export interface VadOptions { sensitivity: number; isAssistantSpeaking: () => boolean; bargeIn: boolean }
+export interface VadOptions {
+  sensitivity: number;
+  isAssistantSpeaking: () => boolean;
+  bargeIn: boolean;
+  /** "silero" runs the neural detector; it falls back to "energy" on failure. */
+  engine: "silero" | "energy";
+}
+
+/** Minimal surface of @ricky0123/vad-web's MicVAD. */
+interface NeuralVad { start(): Promise<void>; destroy(): Promise<void> }
+/** The core keeps at most ~60 s of 16 kHz audio per utterance. */
+const MAX_UTTERANCE_SAMPLES = 16000 * 55;
 
 const PREROLL_MS = 320;
 const START_MS = 140;
@@ -30,9 +43,9 @@ const HANGOVER_MS = 850;
 
 export function microphoneError(error: unknown): string {
   if (error instanceof DOMException && (error.name === "NotAllowedError" || error.name === "SecurityError")) {
-    return "Нет доступа к микрофону. Разрешите микрофон для сайта и откройте его по HTTPS или с компьютера.";
+    return t("mic.denied");
   }
-  if (error instanceof DOMException && error.name === "NotFoundError") return "Микрофон не найден.";
+  if (error instanceof DOMException && error.name === "NotFoundError") return t("mic.notFound");
   return String(error);
 }
 
@@ -51,6 +64,7 @@ export class Microphone {
   private utteranceMs = 0;
   private preroll: ArrayBuffer[] = [];
   private prerollMs = 0;
+  private neural?: NeuralVad;
 
   constructor(
     private readonly sink: () => MicSink | undefined,
@@ -66,10 +80,21 @@ export class Microphone {
     this.mode = mode;
     try {
       if (!navigator.mediaDevices?.getUserMedia) {
-        throw new Error("Микрофон недоступен. На телефоне откройте HTTPS-адрес Юи и разрешите доступ к микрофону.");
+        throw new Error(t("mic.unavailable"));
       }
       const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1 } });
       if (generation !== this.generation) { stream.getTracks().forEach(track => track.stop()); return; }
+      if (mode === "handsfree" && this.vad().engine === "silero") {
+        this.stream = stream;
+        try {
+          await this.startNeural(stream, generation);
+          return;
+        } catch (error) {
+          if (generation !== this.generation) return;
+          console.warn("Silero VAD unavailable", error);
+          this.callbacks.error(t("mic.vadFallback", { error: error instanceof Error ? error.message : String(error) }));
+        }
+      }
       const context = createContext();
       this.stream = stream;
       this.context = context;
@@ -94,11 +119,11 @@ export class Microphone {
       node.connect(context.destination);
       if (mode === "push") {
         const seconds = Math.max(1, Math.floor(limitMs / 1000));
-        this.callbacks.status(`Слушаю · до ${seconds} с`, true);
+        this.callbacks.status(t("mic.push", { seconds }), true);
         this.timer = window.setTimeout(() => this.stop(true), limitMs);
       } else {
         this.resetVad();
-        this.callbacks.status("Свободный разговор · говорите, когда захотите", true);
+        this.callbacks.status(t("mic.handsfree"), true);
       }
     } catch (error) {
       if (generation !== this.generation) return;
@@ -120,10 +145,75 @@ export class Microphone {
     } catch { /* socket already closed */ }
     this.speaking = false;
     this.callbacks.level(0);
-    this.callbacks.status("Микрофон выключен", false);
+    this.callbacks.status(t("mic.off"), false);
+  }
+
+  /** Neural VAD: Silero v5 in onnxruntime-web; one PCM upload per utterance. */
+  private async startNeural(stream: MediaStream, generation: number): Promise<void> {
+    const { MicVAD } = await import("@ricky0123/vad-web");
+    const options = this.vad();
+    const sensitivity = Math.max(0.3, Math.min(3, options.sensitivity));
+    const positive = Math.max(0.2, Math.min(0.85, 0.5 / sensitivity));
+    let interrupted = false;
+    const vad = await MicVAD.new({
+      model: "v5",
+      baseAssetPath: "/vad/",
+      onnxWASMBasePath: "/vad/",
+      getStream: async () => stream,
+      pauseStream: async () => undefined,
+      resumeStream: async current => current,
+      positiveSpeechThreshold: positive,
+      negativeSpeechThreshold: Math.max(0.1, positive - 0.15),
+      redemptionMs: 700,
+      preSpeechPadMs: 320,
+      minSpeechMs: 250,
+      onFrameProcessed: (_probabilities, frame) => {
+        let sum = 0;
+        for (const sample of frame) sum += sample * sample;
+        this.callbacks.level(Math.min(1, Math.sqrt(sum / frame.length) * 6));
+      },
+      onSpeechRealStart: () => {
+        if (generation !== this.generation) return;
+        const current = this.vad();
+        interrupted = current.isAssistantSpeaking();
+        // Echo of Yui's own voice must not start a turn unless barge-in is on.
+        if (interrupted && !current.bargeIn) return;
+        if (interrupted) {
+          try { this.sink()?.send({ type: "barge_in", text: "speech_aec" }); } catch { /* closed */ }
+        }
+        this.speaking = true;
+        this.callbacks.speechStart();
+        this.callbacks.status(t("mic.hearing"), true);
+      },
+      onVADMisfire: () => { if (generation === this.generation) this.callbacks.status(t("mic.handsfree"), true); },
+      onSpeechEnd: audio => {
+        if (generation !== this.generation) return;
+        const wanted = this.speaking;
+        this.speaking = false;
+        this.callbacks.status(t("mic.handsfree"), true);
+        if (!wanted) return;
+        const samples = audio.length > MAX_UTTERANCE_SAMPLES ? audio.subarray(audio.length - MAX_UTTERANCE_SAMPLES) : audio;
+        const pcm = new Int16Array(samples.length);
+        for (let i = 0; i < samples.length; i++) pcm[i] = Math.round(Math.max(-1, Math.min(1, samples[i] ?? 0)) * 32767);
+        try {
+          // Chunked like the live path so one frame never exceeds socket limits.
+          for (let offset = 0; offset < pcm.length; offset += 16000) {
+            this.sink()?.sendAudio(pcm.slice(offset, offset + 16000).buffer);
+          }
+          this.sink()?.send({ type: "audio.end", sample_rate: 16000, channels: 1 });
+        } catch (error) { this.stop(false); this.callbacks.error(String(error)); }
+      },
+    });
+    if (generation !== this.generation) { await vad.destroy(); return; }
+    this.neural = vad;
+    await vad.start();
+    this.callbacks.status(t("mic.handsfree"), true);
   }
 
   private release(): void {
+    const neural = this.neural;
+    this.neural = undefined;
+    void neural?.destroy().catch(() => undefined);
     this.stream?.getTracks().forEach(track => track.stop());
     this.node?.disconnect();
     if (this.timer !== undefined) clearTimeout(this.timer);
@@ -170,7 +260,7 @@ export class Microphone {
           try { this.sink()?.send({ type: "barge_in", text: "speech_aec" }); } catch { /* closed */ }
         }
         this.callbacks.speechStart();
-        this.callbacks.status("● Слушаю…", true);
+        this.callbacks.status(t("mic.hearing"), true);
         for (const chunk of this.preroll) this.forward(chunk);
         this.preroll = []; this.prerollMs = 0;
       }
@@ -185,7 +275,7 @@ export class Microphone {
         this.sink()?.send({ type: "audio.end", sample_rate: this.context?.sampleRate ?? 16000, channels: 1 });
       } catch { /* closed */ }
       this.resetVad();
-      this.callbacks.status("Свободный разговор · говорите, когда захотите", true);
+      this.callbacks.status(t("mic.handsfree"), true);
     }
   }
 }

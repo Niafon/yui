@@ -57,7 +57,7 @@ function loadCore(): Promise<void> {
     script.onerror = () => {
       coreReady = undefined;
       script.remove();
-      reject(new Error("Не удалось загрузить Cubism Core"));
+      reject(new Error("Cubism Core failed to load"));
     };
     document.head.append(script);
   });
