@@ -22,7 +22,11 @@ class Element {
   children = [];
   hidden = new Set();
   classList = { add: v => this.hidden.add(v), remove: v => this.hidden.delete(v) };
-  append(...children) { this.children.push(...children); }
+  append(...children) {
+    this.children.push(...children);
+    // Text nodes and links contribute their text like the real DOM.
+    for (const child of children) if (typeof child.data === 'string' || child.href) this.textContent += child.data ?? child.textContent;
+  }
   after(node) { this.actions = node; }
 }
 
@@ -40,7 +44,8 @@ function fixture() {
     },
     sessionId: 'session',
     streamingTurn: new Element(),
-    document: { createElement: () => new Element() },
+    document: { createElement: () => new Element(), createTextNode: data => ({ data }) },
+    URL,
     el: id => { if (!nodes.has(id)) nodes.set(id, new Element()); return nodes.get(id); },
     addTurn: (who, text) => { const node = new Element(); node.textContent = text; turns.push({ who, node }); return node; },
     stopSpeech: () => { stopped++; },
@@ -51,7 +56,8 @@ function fixture() {
   return { context, turns, requests, nodes, timers, stopped: () => stopped };
 }
 
-const pending = { id: 'invocation', tool: 'reminder.create', description: 'Создать напоминание', args: { text: 'Позвонить', in_minutes: 5 }, method: 'button', expires_at: '2099-01-01T00:00:00Z' };
+// Mirrors core's PendingTool JSON (invocation_id / human_readable_action / required_method).
+const pending = { invocation_id: 'invocation', tool: 'reminder.create', human_readable_action: 'Создать напоминание «Позвонить» через 5 минут', required_method: 'button', expires_at: '2099-01-01T00:00:00Z' };
 const tick = () => new Promise(resolve => setImmediate(resolve));
 
 test('tool confirmation has real controls, sends approval and shows one result', async () => {
@@ -90,7 +96,7 @@ test('rejection and retry after a failed HTTP request remain usable', async () =
 
 test('strong factors cannot be replaced with a button and stale requests expire', () => {
   const f = fixture();
-  f.context.askTool({ ...pending, method: 'pin' });
+  f.context.askTool({ ...pending, required_method: 'pin' });
   const [approve, reject] = f.turns[0].node.actions.children;
   assert.equal(approve.disabled, true);
   assert.equal(reject.disabled, false);

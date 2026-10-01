@@ -122,6 +122,59 @@ export interface MemoryItem {
   category: string;
   status: string;
   recorded_at: string;
+  pinned?: boolean;
+}
+
+export type ConversationMode = "normal" | "work" | "learning" | "brief" | "support" | "playful" | "public" | "night" | "silent";
+
+export interface Identity {
+  id: string;
+  name: string;
+  speech_style?: string;
+  relationship?: string;
+  traits?: Record<string, number>;
+  initiative: number;
+  mode: ConversationMode;
+  presentation?: { voice_profile?: string; live2d_package?: string };
+}
+
+export interface IdentityPatch {
+  name?: string;
+  speech_style?: string;
+  relationship?: string;
+  traits?: Record<string, number>;
+  initiative?: number;
+  mode?: ConversationMode;
+  voice_profile?: string;
+}
+
+export interface Turn {
+  id: string;
+  seq: number;
+  role: string;
+  text: string;
+  started_at: string;
+  completed_at?: string;
+}
+
+export interface DeviceInfo {
+  id: string;
+  name: string;
+  kind: string;
+  paired_at: string;
+  last_seen_at: string;
+  revoked_at?: string;
+}
+
+export interface Grant {
+  id: string;
+  subject_kind: string;
+  subject_id: string;
+  category: string;
+  action: string;
+  decision: string;
+  expires_at?: string;
+  created_at: string;
 }
 
 export interface AuditRecord {
@@ -167,6 +220,11 @@ export class CoreClient {
     return this.base.replace(/^http/, "ws");
   }
 
+  /** Go encodes an empty slice as null; lists are normalised to arrays. */
+  private async list<T>(path: string): Promise<T[]> {
+    return (await this.request<T[] | null>(path)) ?? [];
+  }
+
   async request<T>(path: string, init: RequestInit = {}): Promise<T> {
     const res = await fetch(`${this.httpBase}${path}`, {
       ...init,
@@ -189,15 +247,69 @@ export class CoreClient {
   }
 
   identities() {
-    return this.request<Array<{ id: string; name: string }>>("/v1/identities");
+    return this.list<Identity>("/v1/identities");
+  }
+
+  updateIdentity(id: string, patch: IdentityPatch) {
+    return this.request<Identity>(`/v1/identities/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      body: JSON.stringify(patch),
+    });
+  }
+
+  session(id: string) {
+    return this.request<SessionInfo & { closed_at?: string }>(`/v1/sessions/${encodeURIComponent(id)}`);
+  }
+
+  turns(sessionId: string, limit = 60) {
+    return this.list<Turn>(`/v1/sessions/${encodeURIComponent(sessionId)}/turns?limit=${limit}`);
+  }
+
+  closeSession(id: string) {
+    return this.request<unknown>(`/v1/sessions/${encodeURIComponent(id)}/close`, { method: "POST", body: "{}" });
+  }
+
+  pinMemory(id: string, pinned: boolean) {
+    return this.request<unknown>(`/v1/memory/${encodeURIComponent(id)}/pin`, { method: "POST", body: JSON.stringify({ pinned }) });
+  }
+
+  confirmMemory(id: string, correct: boolean) {
+    return this.request<MemoryItem>(`/v1/memory/${encodeURIComponent(id)}/confirm`, { method: "POST", body: JSON.stringify({ correct }) });
+  }
+
+  deleteMemory(id: string) {
+    return this.request<unknown>(`/v1/memory/${encodeURIComponent(id)}`, { method: "DELETE" });
+  }
+
+  addMemory(identityId: string, content: string) {
+    return this.request<MemoryItem>("/v1/memory", {
+      method: "POST",
+      body: JSON.stringify({ identity_id: identityId, category: "preferences", content, importance: 0.7 }),
+    });
+  }
+
+  grants() {
+    return this.list<Grant>("/v1/permissions");
+  }
+
+  revokeGrant(id: string) {
+    return this.request<unknown>(`/v1/permissions/${encodeURIComponent(id)}`, { method: "DELETE" });
+  }
+
+  devices() {
+    return this.list<DeviceInfo>("/v1/devices");
+  }
+
+  revokeDevice(id: string) {
+    return this.request<unknown>(`/v1/devices/${encodeURIComponent(id)}/revoke`, { method: "POST", body: "{}" });
   }
 
   memories(identityId: string) {
-    return this.request<MemoryItem[]>(`/v1/memory?identity_id=${encodeURIComponent(identityId)}&active=true&limit=100`);
+    return this.list<MemoryItem>(`/v1/memory?identity_id=${encodeURIComponent(identityId)}&active=true&limit=100`);
   }
 
   audit(identityId: string) {
-    return this.request<AuditRecord[]>(`/v1/audit?identity_id=${encodeURIComponent(identityId)}&limit=100`);
+    return this.list<AuditRecord>(`/v1/audit?identity_id=${encodeURIComponent(identityId)}&limit=100`);
   }
 
   startSession(identityId?: string) {
@@ -215,7 +327,7 @@ export class CoreClient {
   }
 
   pendingTools() {
-    return this.request<PendingTool[]>("/v1/tools/pending");
+    return this.list<PendingTool>("/v1/tools/pending");
   }
 
   confirmTool(id: string, approved: boolean, sessionId: string) {
@@ -233,7 +345,7 @@ export class CoreClient {
   }
 
   models() {
-    return this.request<CatalogModel[]>("/v1/models");
+    return this.list<CatalogModel>("/v1/models");
   }
 
   addModel(input: AddModelInput) {

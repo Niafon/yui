@@ -34,6 +34,7 @@ function stage() {
   };
   const context = vm.createContext({
     el, document: { createElement: node }, client, identityId: 'owner',
+    iconButton: (name, label, onClick) => { const button = node(); button.label = label; button.onClick = onClick; return button; },
     providerLocal: new Map([['remote-llm', false]]), ledgerLoaded: false,
   });
   vm.runInContext(code, context);
@@ -46,6 +47,8 @@ test('saved memories and remote model calls populate both tabs on connect', asyn
   await context.loadLedger();
   assert.equal(el('memory-list').children.length, 1);
   assert.equal(el('memory-list').children[0].children[1].textContent, 'Пользователь любит чай');
+  const actions = el('memory-list').children[0].children[2].children.map(button => button.label);
+  assert.deepEqual(actions, ['Закрепить', 'Удалить']);
   assert.equal(el('ledger-list').children.length, 1);
   assert.equal(el('ledger-list').children[0].dataset.remote, 'true');
   assert.match(el('ledger-list').children[0].children[1].textContent, /Передано вовне: current_text/);
@@ -53,4 +56,12 @@ test('saved memories and remote model calls populate both tabs on connect', asyn
   assert.equal(el('ledger-empty').classList.contains('pane--hidden'), true);
   await context.loadLedger();
   assert.equal(el('ledger-list').children.length, 1);
+});
+
+test('memories awaiting confirmation offer a confirm action and pinned ones can be unpinned', async () => {
+  const { context, el } = stage();
+  context.addMemory({ id: 'm2', content: 'Зовут Аня', category: 'profile', status: 'needs_confirmation', pinned: true });
+  const actions = el('memory-list').children[0].children[2].children.map(button => button.label);
+  assert.deepEqual(actions, ['Подтвердить', 'Открепить', 'Удалить']);
+  assert.equal(el('memory-list').children[0].dataset.pinned, 'true');
 });

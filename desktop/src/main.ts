@@ -1,19 +1,28 @@
 /**
  * Stage wiring. Reads frames from the core, renders state, and shows exactly
  * which data categories left the machine on each turn.
+ *
+ * The same page runs as the main window (avatar + chat + settings) or as a
+ * detached chat window (?view=chat). Every window is an independent client of
+ * the same core session; WindowHub decides which one plays audio.
  */
 
 import {
   CoreClient,
   type Frame,
+  type Identity,
   type ProviderStatus,
   type InferenceDecision,
   type InferenceStatus,
   type PendingTool,
 } from "./api";
-import { PresenceRibbon, type PresenceState } from "./presence";
-import { createAvatar, createVRMAvatar, DEFAULT_MODEL, DEFAULT_VRM_MODEL, type Avatar } from "./live2d";
+import { renderMarkdown } from "./markdown";
+import { Microphone } from "./mic";
 import { initModelSettings } from "./model-settings";
+import { applyAppearance, onPrefs, prefs } from "./prefs";
+import { initSettings, iconButton } from "./settings";
+import { Stage } from "./stage";
+import { WindowHub, closeDetached, isTauri, openDetached, type WindowRole } from "./windows";
 import QRCode from "qrcode";
 
 const el = <T extends HTMLElement>(id: string): T => {
@@ -32,39 +41,37 @@ const STATE_LABELS: Record<string, string> = {
   closed: "сессия закрыта",
 };
 
-const ribbon = new PresenceRibbon(el<HTMLCanvasElement>("presence"));
-let avatar: Avatar = createAvatar(el<HTMLCanvasElement>("live2d"));
-let avatarGeneration = 0;
-let currentAvatarState: PresenceState = "idle";
-const vrmModels: Record<string, string> = { vrm: DEFAULT_VRM_MODEL, shino: "/assets/vrm/shino.vrm", victoria: "/assets/vrm/victoria.vrm" };
-async function loadAvatar(format: string): Promise<void> {
-  const generation = ++avatarGeneration;
-  avatar.destroy();
-  const oldCanvas = el<HTMLCanvasElement>("live2d");
-  const canvas = oldCanvas.cloneNode(false) as HTMLCanvasElement;
-  oldCanvas.replaceWith(canvas);
-  const path = vrmModels[format];
-  avatar = path ? createVRMAvatar(canvas) : createAvatar(canvas);
-  const loaded = await avatar.load(path ?? DEFAULT_MODEL);
-  if (generation !== avatarGeneration) return;
-  avatar.setState(currentAvatarState);
-  const fallback = el("figure-fallback");
-  fallback.hidden = loaded;
-  if (!loaded) fallback.textContent = path ? "Не удалось загрузить VRM. Попробуйте другую модель или проверьте WebGL." : "Не удалось загрузить Live2D. Проверьте файлы модели и поддержку WebGL.";
-}
-const avatarFormat = localStorage.getItem("yui.avatar") ?? "shino";
-el<HTMLSelectElement>("avatar-format").value = avatarFormat;
-void loadAvatar(avatarFormat);
-el<HTMLSelectElement>("avatar-format").addEventListener("change", (event) => {
-  const format = (event.target as HTMLSelectElement).value;
-  localStorage.setItem("yui.avatar", format); void loadAvatar(format);
+const EMOTION_LABELS: Record<string, string> = {
+  joy: "радость", warm: "тепло", concern: "сочувствие", sad: "грусть", alert: "внимание",
+  surprise: "удивление", think: "раздумье", calm: "спокойствие", angry: "недовольство",
+};
+
+const query = new URLSearchParams(location.search);
+const view: WindowRole = query.get("view") === "chat" ? "chat" : "main";
+document.body.classList.toggle("view-main", view === "main");
+document.body.classList.toggle("view-chat", view === "chat");
+applyAppearance();
+
+const stage = new Stage({
+  frame: el("stage-frame"),
+  canvas: el<HTMLCanvasElement>("live2d"),
+  fallback: el("figure-fallback"),
+  ribbon: el<HTMLCanvasElement>("presence"),
+  audioButton: el<HTMLButtonElement>("stage-audio"),
 });
-window.addEventListener("beforeunload", () => avatar.destroy());
+el("presence").hidden = !prefs().showRibbon;
+const hub = new WindowHub(view, () => syncWindows());
+hub.onUserText = (session, text) => { if (session === sessionId) addTurn("Вы", text); };
+// The chat window never shows the avatar; main mounts it unless detached.
+if (view === "main" && !hub.hasPeer("avatar")) void stage.load();
+else stage.setActive(false);
+window.addEventListener("beforeunload", () => { stage.dispose(); hub.close(); });
 
 let client: CoreClient | undefined;
 let sessionId = "";
 let identityId = "";
-let streamingTurn: HTMLParagraphElement | undefined;
+let identity: Identity | undefined;
+let streamingTurn: HTMLElement | undefined;
 let inferenceTimer: number | undefined;
 let lastInferenceStatus: InferenceStatus | undefined;
 let latestLLMDecision: InferenceDecision | undefined;
@@ -73,6 +80,41 @@ let providerLocal = new Map<string, boolean>();
 let remoteDefaultProvider = false;
 let ledgerLoaded = false;
 let modelSettings: ReturnType<typeof initModelSettings> | undefined;
+let assistantSpeaking = false;
+let reconnectTimer: number | undefined;
+let reconnectDelay = 2000;
+
+/** The core restarts (updates, crashes, sleep): rejoin the same session. */
+function scheduleReconnect(): void {
+  if (reconnectTimer !== undefined) return;
+  const session = localStorage.getItem("yui.session") ?? "";
+  el("bar-core").textContent = `переподключение через ${Math.round(reconnectDelay / 1000)} с`;
+  reconnectTimer = window.setTimeout(() => {
+    reconnectTimer = undefined;
+    reconnectDelay = Math.min(30000, reconnectDelay * 2);
+    void connect(view === "main" ? session : hub.knownSession() || session, true);
+  }, reconnectDelay);
+}
+
+/** Reacts to windows opening and closing: audio ownership and layout. */
+function syncWindows(): void {
+  const avatarAway = view === "main" && hub.hasPeer("avatar");
+  const chatAway = view === "main" && hub.hasPeer("chat");
+  document.body.classList.toggle("avatar-detached", avatarAway);
+  document.body.classList.toggle("chat-detached", chatAway);
+  el("stage-frame").hidden = avatarAway;
+  el("stage-detached").hidden = !avatarAway;
+  el("chat-detached-note").hidden = !chatAway;
+  if (view === "main") stage.setActive(!avatarAway);
+  const owns = hub.ownsAudio;
+  if (!owns && stage.speech.enabled) stage.stopSpeech();
+  stage.speech.enabled = owns;
+  // A detached window follows the main window to a new conversation.
+  if (view !== "main" && client && sessionId) {
+    const shared = hub.knownSession();
+    if (shared && shared !== sessionId) void connect(shared);
+  }
+}
 
 function updatePrivacyTag(preferences?: InferenceStatus["preferences"]): void {
   const remoteLock = preferences?.preferred_provider
@@ -103,36 +145,101 @@ function setInferenceControlsEnabled(enabled: boolean): void {
 function readConnection(): { base: string; token: string } {
   const params = new URLSearchParams(location.search);
   const fragment = new URLSearchParams(location.hash.slice(1));
+  const sameOrigin = location.protocol.startsWith("http") && location.port !== "5273";
   return {
-    base: params.get("core") ?? localStorage.getItem("yui.core") ?? (location.port === "5273" ? "http://127.0.0.1:8766" : location.origin),
+    base: params.get("core") ?? localStorage.getItem("yui.core") ?? (sameOrigin ? location.origin : "http://127.0.0.1:8766"),
     token: fragment.get("token") ?? params.get("token") ?? localStorage.getItem("yui.token") ?? "",
   };
+}
+
+/** Inside the desktop shell the launcher hands the endpoint to Tauri. */
+async function tauriConnection(): Promise<{ base: string; token: string } | undefined> {
+  if (!isTauri()) return undefined;
+  try {
+    const { invoke } = await import("@tauri-apps/api/core");
+    const endpoint = await invoke<{ base: string; token: string }>("core_endpoint");
+    return endpoint.token ? endpoint : undefined;
+  } catch { return undefined; }
 }
 
 function setState(state: string): void {
   el("state-label").textContent = STATE_LABELS[state] ?? state;
   el("state-dot").dataset.state = state;
-  const known: PresenceState[] = ["idle", "listening", "thinking", "speaking", "error"];
-  currentAvatarState = known.includes(state as PresenceState) ? (state as PresenceState) : "idle";
-  ribbon.setState(currentAvatarState);
-  avatar.setState(currentAvatarState);
+  assistantSpeaking = state === "speaking";
+  stage.setState(state);
 }
 
-function addTurn(who: string, text: string, kind = ""): HTMLParagraphElement {
+function formatTime(at?: string): string {
+  const time = at ? new Date(at) : new Date();
+  return Number.isNaN(time.getTime()) ? "" : time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+
+function addTurn(who: string, text: string, kind = "", at?: string): HTMLParagraphElement {
   const list = el<HTMLOListElement>("transcript");
   document.getElementById("transcript-empty")?.remove();
+  const stick = list.scrollHeight - list.scrollTop - list.clientHeight < 80;
   const item = document.createElement("li");
   item.className = `turn ${kind || (who === "Вы" ? "turn--user" : "turn--notice")}`;
   const label = document.createElement("span");
   label.className = "turn__who";
   label.textContent = who;
+  const time = document.createElement("time");
+  time.className = "turn__time";
+  time.textContent = formatTime(at);
+  label.append(time);
   const body = document.createElement("p");
   body.className = "turn__text";
   body.textContent = text;
   item.append(label, body);
   list.append(item);
-  list.scrollTop = list.scrollHeight;
+  // Follow new messages unless the reader scrolled up to read history.
+  if (stick) list.scrollTop = list.scrollHeight;
   return body;
+}
+
+/** Assistant replies are Markdown; rendering is batched per frame while streaming. */
+function renderAssistant(body: HTMLElement, text: string): void {
+  body.dataset.raw = text;
+  if (body.dataset.pending) return;
+  body.dataset.pending = "1";
+  requestAnimationFrame(() => {
+    delete body.dataset.pending;
+    const list = el("transcript");
+    const stick = list.scrollHeight - list.scrollTop - list.clientHeight < 80;
+    body.classList.add("turn__text--md");
+    body.innerHTML = renderMarkdown(body.dataset.raw ?? "");
+    if (stick) list.scrollTop = list.scrollHeight;
+  });
+}
+
+function addAssistantTurn(text: string, at?: string): HTMLElement {
+  const body = addTurn(identity?.name ?? "Юи", "", "turn--assistant", at);
+  if (text) renderAssistant(body, text);
+  return body;
+}
+
+function clearTranscript(): void {
+  const list = el("transcript");
+  list.replaceChildren();
+  const empty = document.createElement("li");
+  empty.id = "transcript-empty";
+  empty.className = "transcript__empty";
+  empty.innerHTML = '<span class="transcript__glyph" aria-hidden="true"><svg><use href="#i-sparkle"/></svg></span>'
+    + "<strong>Новый разговор</strong><span>Напишите Юи или включите микрофон.</span>";
+  list.append(empty);
+  streamingTurn = undefined;
+}
+
+async function loadHistory(currentClient: CoreClient, session: string): Promise<void> {
+  try {
+    const turns = await currentClient.turns(session, 60);
+    if (client !== currentClient || sessionId !== session) return;
+    clearTranscript();
+    for (const turn of turns.slice().reverse()) {
+      if (turn.role === "user") addTurn("Вы", turn.text, "", turn.started_at);
+      else if (turn.role === "assistant" && turn.text) addAssistantTurn(turn.text, turn.completed_at || turn.started_at);
+    }
+  } catch { /* history is a convenience; the live session still works */ }
 }
 
 function addMemory(payload: Record<string, unknown>): void {
@@ -142,15 +249,39 @@ function addMemory(payload: Record<string, unknown>): void {
     ?? document.createElement("li");
   if (id) item.dataset.id = id;
   item.dataset.status = String(payload.status ?? "");
+  item.dataset.pinned = String(payload.pinned === true);
   item.replaceChildren();
   const meta = document.createElement("div");
   meta.className = "memory__meta";
-  meta.textContent = `${payload.category} · ${payload.status}`;
+  meta.textContent = `${payload.category} · ${payload.status}${payload.pinned ? " · закреплено" : ""}`;
   const text = document.createElement("div");
   text.textContent = String(payload.content ?? "");
   item.append(meta, text);
+  if (id) item.append(memoryActions(id, payload));
   list.prepend(item);
   el("memory-empty").classList.toggle("pane--hidden", list.children.length > 0);
+}
+
+function memoryActions(id: string, payload: Record<string, unknown>): HTMLElement {
+  const actions = document.createElement("div");
+  actions.className = "memory__actions";
+  const act = (task: (current: CoreClient) => Promise<unknown>) => () => {
+    const current = client;
+    if (!current) return;
+    void task(current).then(() => refreshMemory()).catch(error => {
+      el("memory-empty").textContent = `Не удалось изменить память: ${String(error)}`;
+      el("memory-empty").classList.remove("pane--hidden");
+    });
+  };
+  if (payload.status === "needs_confirmation") {
+    actions.append(iconButton("check", "Подтвердить", act(current => current.confirmMemory(id, true))));
+  }
+  const pinned = payload.pinned === true;
+  actions.append(
+    iconButton("pin", pinned ? "Открепить" : "Закрепить", act(current => current.pinMemory(id, !pinned))),
+    iconButton("trash", "Удалить", act(current => current.deleteMemory(id))),
+  );
+  return actions;
 }
 
 function addLedgerEntry(provider: string, included: string[], excluded: string[], remote?: boolean, id = "", result = ""): void {
@@ -298,10 +429,11 @@ function askTool(pending: PendingTool): void {
   const currentSession = sessionId;
   const text = addTurn("Подтверждение действия", pending.human_readable_action || pending.tool);
   const actions = document.createElement("div");
+  actions.className = "turn__actions";
   const approve = document.createElement("button");
   const reject = document.createElement("button");
-  approve.className = "button button--warn";
-  reject.className = "button";
+  approve.className = "button button--warn button--small";
+  reject.className = "button button--small";
   approve.textContent = "Подтвердить";
   reject.textContent = "Отклонить";
   const strongFactor = pending.required_method === "pin" || pending.required_method === "biometric";
@@ -350,67 +482,8 @@ function clearRequests(): void {
   completedTools.clear();
 }
 
-function playAudioChunk(base64: string, sampleRate: number): void {
-  const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
-  const samples = new Int16Array(bytes.buffer, bytes.byteOffset, Math.floor(bytes.byteLength / 2));
-  const context = audioContext();
-  const buffer = context.createBuffer(1, samples.length || 1, sampleRate || 16000);
-  const channel = buffer.getChannelData(0);
-  for (let i = 0; i < samples.length; i++) channel[i] = (samples[i] ?? 0) / 32768;
-  queueSpeech(context, buffer);
-}
-
-function queueSpeech(context: AudioContext, buffer: AudioBuffer): void {
-  const source = context.createBufferSource();
-  source.buffer = buffer;
-  source.connect(speechAnalyser!);
-  speechSources.add(source);
-  source.onended = () => { speechSources.delete(source); source.disconnect(); };
-  source.start(nextPlaybackTime(context, buffer.duration));
-  void context.resume();
-  if (!speechFrame) speechFrame = requestAnimationFrame(animateSpeech);
-}
-
-let sharedContext: AudioContext | undefined;
-let playhead = 0;
-let speechAnalyser: AnalyserNode | undefined;
-let speechFrame = 0;
-const speechSources = new Set<AudioBufferSourceNode>();
-const speechWave = new Float32Array(512);
-
-function animateSpeech(): void {
-  speechFrame = 0;
-  speechAnalyser?.getFloatTimeDomainData(speechWave);
-  const rms = Math.sqrt(speechWave.reduce((sum, value) => sum + value * value, 0) / speechWave.length);
-  const level = speechSources.size ? Math.min(1, Math.max(0, rms - 0.008) * 7) : 0;
-  avatar.setMouth(level);
-  ribbon.setLevel(level);
-  if (speechSources.size) speechFrame = requestAnimationFrame(animateSpeech);
-}
-
 function stopSpeech(): void {
-  cancelAnimationFrame(speechFrame); speechFrame = 0;
-  for (const source of speechSources) { source.stop(); source.disconnect(); }
-  speechSources.clear();
-  void sharedContext?.close(); sharedContext = undefined; speechAnalyser = undefined;
-  playhead = 0; speechWave.fill(0); avatar.setMouth(0); ribbon.setLevel(0);
-}
-
-function audioContext(): AudioContext {
-  if (!sharedContext) {
-    sharedContext = new AudioContext();
-    speechAnalyser = sharedContext.createAnalyser();
-    speechAnalyser.fftSize = 512;
-    speechAnalyser.connect(sharedContext.destination);
-  }
-  return sharedContext;
-}
-
-/** Queues chunks back to back so streamed speech does not overlap. */
-function nextPlaybackTime(context: AudioContext, duration: number): number {
-  const start = Math.max(context.currentTime, playhead);
-  playhead = start + duration;
-  return start;
+  stage.stopSpeech();
 }
 
 function formatPercent(value: number): string {
@@ -552,13 +625,16 @@ function handleFrame(frame: Frame): void {
       break;
 
     case "turn.delta": {
-      streamingTurn ??= addTurn("Юи", "", "turn--assistant");
-      streamingTurn.textContent += String(payload.text ?? "");
+      streamingTurn ??= addAssistantTurn("");
+      renderAssistant(streamingTurn, (streamingTurn.dataset.raw ?? "") + String(payload.text ?? ""));
       break;
     }
 
     case "turn.done": {
-      if (!streamingTurn) addTurn("Юи", String(payload.text ?? ""), "turn--assistant");
+      // The final text has reaction tags removed; prefer it over the stream.
+      const final = String(payload.text ?? "");
+      if (!streamingTurn) { if (final) addAssistantTurn(final); }
+      else if (final) renderAssistant(streamingTurn, final);
       streamingTurn = undefined;
       // Playback owns mouth state: queued speech can outlive turn.done.
       break;
@@ -569,13 +645,17 @@ function handleFrame(frame: Frame): void {
       break;
 
     case "tts.chunk":
-      playAudioChunk(String(payload.audio_b64 ?? ""), Number(payload.sample_rate ?? 16000));
+      stage.playChunk(String(payload.audio_b64 ?? ""), Number(payload.sample_rate ?? 16000));
       break;
 
-    case "avatar.expression":
-      el("emotion-label").textContent = String(payload.label ?? "");
-      avatar.react(String(payload.label ?? "neutral"), String(payload.expression ?? "exp_neutral"));
+    case "avatar.expression": {
+      const label = String(payload.label ?? "neutral");
+      const chip = el("emotion-label");
+      chip.textContent = EMOTION_LABELS[label] ?? "";
+      chip.hidden = !chip.textContent;
+      stage.react(label, String(payload.expression ?? "exp_neutral"));
       break;
+    }
 
     case "memory.indicator":
       addMemory(payload);
@@ -638,16 +718,48 @@ function renderProviders(providers: ProviderStatus[]): void {
   updatePrivacyTag(lastInferenceStatus?.preferences);
 }
 
-async function connect(): Promise<void> {
-  const { base, token } = readConnection();
+function setIdentity(next: Identity | undefined): void {
+  identity = next;
+  // Only called from connect(), after settings exist.
+  settings.refreshCharacter();
+  el("identity-name").textContent = next?.name ?? "Yui";
+  document.title = next?.name ? `${next.name} · Yui` : "Yui";
+}
+
+/** Joins an explicit session, a sibling window's session, the last one, or starts fresh. */
+async function pickSession(currentClient: CoreClient, explicit: string, identityHint: string): Promise<string> {
+  const candidates = [explicit, view === "main" ? "" : await hub.discover(), localStorage.getItem("yui.session") ?? ""];
+  for (const candidate of candidates) {
+    if (!candidate) continue;
+    try {
+      const existing = await currentClient.session(candidate);
+      if (!existing.closed_at && existing.state !== "closed" && (!identityHint || existing.identity_id === identityHint)) {
+        return existing.id;
+      }
+    } catch { /* gone or not ours: try the next one */ }
+  }
+  const session = await currentClient.startSession(identityHint || undefined);
+  return session.id;
+}
+
+async function connect(explicitSession = query.get("session") ?? "", automatic = false): Promise<void> {
+  if (reconnectTimer !== undefined) { window.clearTimeout(reconnectTimer); reconnectTimer = undefined; }
+  let { base, token } = readConnection();
+  if (!token) {
+    const shell = await tauriConnection();
+    if (shell) ({ base, token } = shell);
+  }
   if (!token) {
     await showPairing();
     return;
   }
-  localStorage.setItem("yui.core", base);
-  localStorage.setItem("yui.token", token);
+  try { localStorage.setItem("yui.core", base); localStorage.setItem("yui.token", token); } catch { /* private mode */ }
 
-  history.replaceState(null, "", location.pathname);
+  if (location.hash || query.has("token")) {
+    const clean = new URLSearchParams(location.search);
+    clean.delete("token");
+    history.replaceState(null, "", `${location.pathname}${clean.size ? `?${clean}` : ""}`);
+  }
   client?.close();
   clearRequests();
   sessionId = "";
@@ -661,8 +773,9 @@ async function connect(): Promise<void> {
   el("memory-empty").classList.remove("pane--hidden");
   el("ledger-empty").classList.remove("pane--hidden");
   setSensorsEnabled(false);
-  stopMicrophone(false);
+  microphone.stop(false);
   if (inferenceTimer !== undefined) window.clearInterval(inferenceTimer);
+  el("connect").textContent = "Подключение…";
 
   client = new CoreClient(base, token);
   const currentClient = client;
@@ -674,17 +787,21 @@ async function connect(): Promise<void> {
 
     const identities = await currentClient.identities();
     if (client !== currentClient) return;
-    const identity = identities[0];
-    if (identity) el("identity-name").textContent = identity.name;
-    identityId = identity?.id ?? "";
+    setIdentity(identities[0]);
+    identityId = identities[0]?.id ?? "";
 
-    const session = await currentClient.startSession(identity?.id);
+    const chosen = await pickSession(currentClient, explicitSession, identityId);
     if (client !== currentClient) return;
-    sessionId = session.id;
+    sessionId = chosen;
+    const session = await currentClient.session(chosen);
+    if (client !== currentClient) return;
     identityId = session.identity_id;
+    if (identityId !== identity?.id) setIdentity(identities.find(item => item.id === identityId) ?? identity);
+    if (view === "main") { try { localStorage.setItem("yui.session", sessionId); } catch { /* ignore */ } }
+    hub.setSession(sessionId);
     currentClient.connect(sessionId, handleFrame, () => {
       if (client !== currentClient) return;
-      stopMicrophone(false);
+      microphone.stop(false);
       stopSpeech();
       clearRequests();
       if (inferenceTimer !== undefined) window.clearInterval(inferenceTimer);
@@ -693,10 +810,17 @@ async function connect(): Promise<void> {
       setSensorsEnabled(false);
       modelSettings?.setConnected(false);
       el("bar-core").textContent = "соединение потеряно";
+      el("connect").textContent = "Подключиться";
+      el("connect").hidden = false;
       setState("error");
+      scheduleReconnect();
     });
-    setState("idle");
+    await loadHistory(currentClient, sessionId);
+    if (client !== currentClient) return;
+    setState(session.state === "closed" ? "idle" : session.state || "idle");
     setSensorsEnabled(true);
+    el("connect").hidden = true;
+    reconnectDelay = 2000;
     modelSettings?.setConnected(true);
     void refreshMemory();
     void loadLedger();
@@ -709,7 +833,8 @@ async function connect(): Promise<void> {
     await modelSettings?.refresh();
     if (client !== currentClient || !sessionId) return;
     if (inferenceTimer !== undefined) window.clearInterval(inferenceTimer);
-    inferenceTimer = window.setInterval(() => void refreshInference(), 3000);
+    // Telemetry only matters while someone can see it.
+    inferenceTimer = window.setInterval(() => { if (!document.hidden) void refreshInference(); }, 3000);
   } catch (error) {
     if (client !== currentClient) return;
     currentClient.close();
@@ -717,7 +842,10 @@ async function connect(): Promise<void> {
     setInferenceControlsEnabled(false);
     setSensorsEnabled(false);
     modelSettings?.setConnected(false);
-    addTurn("Ошибка", String(error), "turn--error");
+    el("connect").textContent = "Подключиться";
+    el("connect").hidden = false;
+    // Silent retries while the core is down; one visible error otherwise.
+    if (!automatic) addTurn("Ошибка", String(error), "turn--error");
     if (isUnauthorized(error)) {
       // A paired device token can be revoked or replaced by a fresh core
       // launch. Do not keep retrying it on every click.
@@ -726,8 +854,21 @@ async function connect(): Promise<void> {
       el("runtime-reason").textContent = "Токен отклонён ядром. Откройте новую ссылку подключения Yui.";
     } else {
       el("bar-core").textContent = "не подключено";
+      if (automatic) scheduleReconnect();
     }
   }
+}
+
+async function newConversation(): Promise<void> {
+  const current = client;
+  if (!current || !sessionId) return;
+  const old = sessionId;
+  try { await current.closeSession(old); } catch { /* a closed session is fine */ }
+  try { localStorage.removeItem("yui.session"); } catch { /* ignore */ }
+  clearTranscript();
+  const fresh = await current.startSession(identityId || undefined);
+  if (client !== current) return;
+  await connect(fresh.id);
 }
 
 modelSettings = initModelSettings({
@@ -737,49 +878,85 @@ modelSettings = initModelSettings({
   onProviders: renderProviders,
 });
 
+const settings = initSettings({
+  client: () => client,
+  identity: () => identity,
+  onIdentity: next => setIdentity(next),
+  onTab: tab => {
+    if (tab === "memory") void refreshMemory();
+    if (tab === "ledger" && !ledgerLoaded) void loadLedger();
+    if (tab === "models") void modelSettings?.refresh();
+    if (tab === "inference") void refreshInference();
+  },
+  previewVoice: () => stage.preview(),
+  lipEngine: () => stage.engineLabel,
+  detachAvatar: () => void detach("avatar"),
+  reconnect: base => {
+    if (base) { try { localStorage.setItem("yui.core", base); } catch { /* ignore */ } }
+    void connect(sessionId);
+  },
+  coreBase: () => readConnection().base,
+});
+
+async function detach(role: "avatar" | "chat"): Promise<void> {
+  try {
+    await openDetached(role, sessionId, prefs().avatarOnTop);
+  } catch (error) {
+    addTurn("Окно", String(error instanceof Error ? error.message : error), "turn--error");
+  }
+}
+
 el("connect").addEventListener("click", () => void connect());
+el<HTMLFormElement>("memory-add").addEventListener("submit", event => {
+  event.preventDefault();
+  const input = el<HTMLInputElement>("memory-add-text");
+  const text = input.value.trim();
+  const current = client;
+  if (!text || !current || !identityId) return;
+  input.disabled = true;
+  void current.addMemory(identityId, text).then(item => {
+    input.value = "";
+    addMemory(item as unknown as Record<string, unknown>);
+  }).catch(error => {
+    el("memory-empty").textContent = `Не удалось сохранить: ${String(error)}`;
+    el("memory-empty").classList.remove("pane--hidden");
+  }).finally(() => { input.disabled = !sessionId; });
+});
+el("open-settings").addEventListener("click", () => settings.open());
+el("detach-avatar").addEventListener("click", () => void detach("avatar"));
+el("detach-chat").addEventListener("click", () => void detach("chat"));
+el("attach-avatar").addEventListener("click", () => void closeDetached(hub, "avatar"));
+el("attach-chat").addEventListener("click", () => void closeDetached(hub, "chat"));
+el<HTMLButtonElement>("new-chat").addEventListener("click", () => {
+  if (confirm("Начать новый разговор? Текущий будет завершён, память сохранится.")) void newConversation();
+});
+
+const composerInput = el<HTMLTextAreaElement>("composer-input");
+function autosize(): void {
+  composerInput.style.height = "auto";
+  composerInput.style.height = `${Math.min(180, composerInput.scrollHeight)}px`;
+}
+composerInput.addEventListener("input", autosize);
+composerInput.addEventListener("keydown", event => {
+  if (event.key === "Enter" && !event.shiftKey && !event.isComposing && prefs().sendOnEnter) {
+    event.preventDefault();
+    el<HTMLFormElement>("composer").requestSubmit();
+  }
+});
 
 el<HTMLFormElement>("composer").addEventListener("submit", (event) => {
   event.preventDefault();
-  const input = el<HTMLTextAreaElement>("composer-input");
-  const text = input.value.trim();
+  const text = composerInput.value.trim();
   if (!text || !sessionId) return;
   try {
-    void audioContext().resume();
+    void stage.speech.resume();
     client?.sendText(text);
     addTurn("Вы", text);
-    input.value = "";
+    hub.shareUserText(text);
+    composerInput.value = "";
+    autosize();
   } catch (error) { addTurn("Ошибка", String(error), "turn--error"); }
 });
-
-for (const tab of document.querySelectorAll<HTMLButtonElement>(".tab")) {
-  tab.addEventListener("click", () => {
-    for (const other of document.querySelectorAll<HTMLButtonElement>(".tab")) {
-      const selected = other === tab;
-      other.classList.toggle("tab--on", selected);
-      other.setAttribute("aria-selected", String(selected));
-    }
-    for (const name of ["dialogue", "memory", "ledger", "models", "inference"]) {
-      el(`panel-${name}`).classList.toggle("pane--hidden", name !== tab.dataset.tab);
-    }
-    if (tab.dataset.tab === "memory") void refreshMemory();
-    if (tab.dataset.tab === "ledger" && !ledgerLoaded) void loadLedger();
-    if (tab.dataset.tab === "models") void modelSettings?.refresh();
-  });
-  tab.addEventListener("keydown", (event) => {
-    const tabs = Array.from(document.querySelectorAll<HTMLButtonElement>(".tab"));
-    const index = tabs.indexOf(tab);
-    const next = event.key === "ArrowRight" ? (index + 1) % tabs.length
-      : event.key === "ArrowLeft" ? (index - 1 + tabs.length) % tabs.length
-      : event.key === "Home" ? 0
-      : event.key === "End" ? tabs.length - 1 : -1;
-    const nextTab = tabs[next];
-    if (!nextTab) return;
-    event.preventDefault();
-    nextTab.focus();
-    nextTab.click();
-  });
-}
 
 setInferenceControlsEnabled(false);
 for (const id of INFERENCE_CONTROL_IDS) {
@@ -787,7 +964,10 @@ for (const id of INFERENCE_CONTROL_IDS) {
 }
 
 document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape" && sessionId) client?.cancelTurn();
+  if (event.key !== "Escape" || !sessionId) return;
+  if (document.querySelector("dialog[open]")) return; // Esc closes the dialog instead
+  try { client?.cancelTurn(); } catch { /* socket closed */ }
+  stopSpeech();
 });
 
 // Exported for the ledger view, which the core will populate once turn
@@ -795,7 +975,7 @@ document.addEventListener("keydown", (event) => {
 export { addLedgerEntry };
 
 function setSensorsEnabled(enabled: boolean): void {
-  for (const id of ["microphone", "stop-turn", "camera", "send-message"]) {
+  for (const id of ["microphone", "stop-turn", "camera", "send-message", "new-chat", "memory-add-text", "memory-add-submit"]) {
     el<HTMLButtonElement>(id).disabled = !enabled;
   }
 }
@@ -830,7 +1010,7 @@ async function renderPairingQr(): Promise<void> {
 
 async function showPairing(): Promise<void> {
   const dialog = el<HTMLDialogElement>("pair-dialog");
-  const local = ["localhost", "127.0.0.1", "[::1]"].includes(location.hostname);
+  const local = ["localhost", "127.0.0.1", "[::1]"].includes(location.hostname) || isTauri();
   el("pair-error").textContent = "";
   el("pair-code").textContent = "";
   pairingCode = "";
@@ -881,104 +1061,44 @@ el<HTMLFormElement>("pair-form").onsubmit = async (event) => {
   finally { button.disabled = false; }
 };
 
-let micStream: MediaStream | undefined;
-let micContext: AudioContext | undefined;
-let micNode: AudioWorkletNode | undefined;
-let micTimer: number | undefined;
-let micGeneration = 0;
-function stopMicrophone(send: boolean): void {
-  micGeneration += 1;
-  const stream = micStream;
-  const context = micContext;
-  const node = micNode;
-  const timer = micTimer;
-  micStream = undefined;
-  micContext = undefined;
-  micNode = undefined;
-  micTimer = undefined;
-  stream?.getTracks().forEach(track => track.stop());
-  node?.disconnect();
-  if (timer !== undefined) clearTimeout(timer);
-  if (send) {
-    try { client?.send({type:"audio.end", sample_rate:context?.sampleRate ?? 16000, channels:1}); }
-    catch { /* Socket already closed. */ }
-  } else {
-    try { client?.send({type:"audio.clear"}); } catch { /* Socket already closed. */ }
-  }
-  if (context && context.state !== "closed") void context.close().catch(() => undefined);
-  el("microphone").textContent = "Говорить";
-  el("sensor-state").textContent = "Микрофон выключен";
+const micButton = el<HTMLButtonElement>("microphone");
+const microphone = new Microphone(
+  () => client,
+  {
+    status: (text, active) => {
+      el("sensor-state").textContent = text;
+      micButton.classList.toggle("icon-button--live", active);
+      micButton.setAttribute("aria-pressed", String(active));
+      micButton.title = active ? "Выключить микрофон" : "Говорить";
+      document.body.classList.toggle("mic-on", active);
+    },
+    level: value => stage.setMicLevel(value),
+    error: message => addTurn("Ошибка микрофона", message, "turn--error"),
+    speechStart: () => { void stage.speech.resume(); },
+  },
+  () => ({ sensitivity: prefs().vadSensitivity, bargeIn: prefs().bargeIn, isAssistantSpeaking: () => assistantSpeaking || stage.speech.speaking }),
+);
+
+async function startMicrophone(): Promise<void> {
+  await stage.speech.resume();
+  await microphone.start(prefs().micMode);
 }
-function createMicrophoneContext(): AudioContext {
-  try {
-    return new AudioContext({sampleRate:16000});
-  } catch {
-    // iOS Safari can reject a requested rate; the worklet uses this context's
-    // native rate and audio.end reports it to the STT pipeline.
-    return new AudioContext();
-  }
-}
-function microphoneError(error: unknown): string {
-  if (error instanceof DOMException && (error.name === "NotAllowedError" || error.name === "SecurityError")) {
-    return "Нет доступа к микрофону. Разрешите микрофон для сайта и откройте его по HTTPS или с компьютера.";
-  }
-  return String(error);
-}
-el("microphone").onclick = async () => {
-  const generation = ++micGeneration;
-  try {
-    if (micStream) { stopMicrophone(true); return; }
-    if (!navigator.mediaDevices?.getUserMedia) throw new Error("Микрофон недоступен. На телефоне откройте HTTPS-адрес Юи и разрешите доступ к микрофону.");
-    await audioContext().resume();
-    if (generation !== micGeneration) return;
-    const stream = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true, noiseSuppression:true, channelCount:1}});
-    if (generation !== micGeneration) { stream.getTracks().forEach(track => track.stop()); return; }
-    const context = createMicrophoneContext();
-    micStream = stream;
-    micContext = context;
-    await context.resume();
-    if (generation !== micGeneration) { stream.getTracks().forEach(track => track.stop()); await context.close(); return; }
-    await context.audioWorklet.addModule(`/pcm-capture.js?v=2`);
-    if (generation !== micGeneration) { stream.getTracks().forEach(track => track.stop()); await context.close(); return; }
-    const node = new AudioWorkletNode(context, "pcm-capture");
-    micNode = node;
-    node.port.onmessage = (event: MessageEvent<ArrayBuffer>) => {
-      if (generation !== micGeneration || micStream !== stream || micNode !== node) return;
-      try { client?.sendAudio(event.data); }
-      catch (error) { stopMicrophone(false); addTurn("Ошибка", String(error), "turn--error"); }
-    };
-    context.createMediaStreamSource(stream).connect(node);
-    node.connect(context.destination);
-    const limitMs = Math.max(1000, Math.min(50000, Math.floor((16000 / context.sampleRate) * 60000) - 1000));
-    const limitSeconds = Math.max(1, Math.floor(limitMs / 1000));
-    el("microphone").textContent = "Закончить запись";
-    el("sensor-state").textContent = `● Микрофон включён · до ${limitSeconds} секунд`;
-    micTimer = window.setTimeout(() => stopMicrophone(true), limitMs);
-  } catch (error) {
-    if (generation !== micGeneration) return;
-    stopMicrophone(false);
-    addTurn("Ошибка микрофона", microphoneError(error), "turn--error");
-  }
+
+micButton.onclick = () => {
+  if (microphone.active) microphone.stop(prefs().micMode === "push");
+  else void startMicrophone();
 };
+onPrefs((_, changed) => {
+  if (changed.includes("micMode") && microphone.active) {
+    microphone.stop(false);
+    void startMicrophone();
+  }
+  if (changed.includes("showRibbon")) el("presence").hidden = !prefs().showRibbon;
+});
 el("stop-turn").onclick = () => {
-  stopMicrophone(false);
-  client?.cancelTurn();
+  if (prefs().micMode === "push") microphone.stop(false);
+  try { client?.cancelTurn(); } catch { /* socket closed */ }
   stopSpeech();
-};
-el<HTMLButtonElement>("voice-preview").onclick = async () => {
-  const button = el<HTMLButtonElement>("voice-preview");
-  button.disabled = true;
-  stopSpeech();
-  const context = audioContext();
-  try {
-    await context.resume();
-    const response = await fetch("/assets/voice/xenia-demo.wav");
-    if (!response.ok) throw new Error("Не удалось загрузить пример голоса");
-    const buffer = await context.decodeAudioData(await response.arrayBuffer());
-    if (context === sharedContext) queueSpeech(context, buffer);
-  } catch (error) {
-    if (context === sharedContext) addTurn("Проба голоса", String(error), "turn--error");
-  } finally { button.disabled = false; }
 };
 el<HTMLInputElement>("camera").onchange = async (event) => {
   const input = event.target as HTMLInputElement;
@@ -1027,5 +1147,11 @@ el<HTMLInputElement>("camera").onchange = async (event) => {
     input.value = "";
   }
 };
-document.addEventListener("visibilitychange", () => { if (document.hidden) stopMicrophone(false); });
-if (readConnection().token) void connect();
+document.addEventListener("visibilitychange", () => {
+  // Push-to-talk never records in the background; hands-free is an explicit choice.
+  if (document.hidden && microphone.active && prefs().micMode === "push") microphone.stop(false);
+});
+syncWindows();
+void (async () => {
+  if (readConnection().token || (await tauriConnection())) void connect();
+})();

@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="ru" data-theme="dark" class="avatar-window">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Yui — аватар</title>
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body class="view-avatar">
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+      <defs>
+        <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+        <symbol id="i-pin" viewBox="0 0 24 24"><path d="M9 3.5h6l-1 6 3.5 3.5h-11L10 9.5l-1-6ZM12 13v7.5"/></symbol>
+        <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+        <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+        <symbol id="i-move" viewBox="0 0 24 24"><path d="M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3"/></symbol>
+      </defs>
+    </svg>
+    <main class="pet" id="stage-frame">
+      <canvas id="live2d" class="stage__canvas" width="420" height="640" aria-label="Аватар Юи"></canvas>
+      <p id="figure-fallback" class="stage__fallback" role="status">Загрузка аватара…</p>
+      <span id="emotion-label" class="stage__emotion" hidden></span>
+      <button id="stage-audio" class="stage__audio" type="button" hidden>Включить звук</button>
+      <p id="pet-status" class="pet__status" role="status"></p>
+      <div class="pet__bar" role="toolbar" aria-label="Окно аватара">
+        <button id="pet-drag" class="icon-button icon-button--small" type="button" title="Перетащить (или тяните за модель)" aria-label="Перетащить"><svg><use href="#i-move"/></svg></button>
+        <button id="pet-smaller" class="icon-button icon-button--small" type="button" title="Отдалить" aria-label="Отдалить"><svg><use href="#i-minus"/></svg></button>
+        <button id="pet-bigger" class="icon-button icon-button--small" type="button" title="Приблизить" aria-label="Приблизить"><svg><use href="#i-plus"/></svg></button>
+        <button id="pet-top" class="icon-button icon-button--small" type="button" title="Поверх окон" aria-label="Поверх окон" aria-pressed="true"><svg><use href="#i-pin"/></svg></button>
+        <button id="pet-close" class="icon-button icon-button--small" type="button" title="Вернуть в основное окно" aria-label="Закрыть окно аватара"><svg><use href="#i-close"/></svg></button>
+      </div>
+    </main>
+    <script type="module" src="/src/avatar-window.ts"></script>
+  </body>
+</html>

@@ -138,7 +138,7 @@ core/          Go: ядро, единственный авторитетный w
   migrations/  legacy PostgreSQL migrations for v0.2/export
 workers/       Python: STT, TTS, Vision, Embeddings за узким контрактом (ADR-005)
 contracts/     protobuf: control plane, data plane, память, воркеры
-desktop/       Tauri 2 + TypeScript: Live2D-сцена и панель управления
+desktop/       Tauri 2 + TypeScript: VRM/Live2D-сцена, чат, настройки, окна аватара и чата
 mobile/        Flutter + Kotlin: сенсоры, наушники, уведомления
 docs/          архитектура, решения, трассировка требований
 ```

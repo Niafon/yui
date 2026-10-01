@@ -30,6 +30,12 @@
     "sha256": "f0b7b68e8404fb2a327f77515388f9f2418d038e3eb98a7ecff89818c3dd4e97"
   },
   {
+    "file": "haru/Haru.userdata3.json",
+    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Haru/Haru.userdata3.json",
+    "bytes": 313,
+    "sha256": "6d001365965cdabd9fb36cffa9583c9e3eff20331d791c00064c4f9246ca2893"
+  },
+  {
     "file": "haru/Haru.2048/texture_00.png",
     "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Haru/Haru.2048/texture_00.png",
     "bytes": 1526786,
@@ -108,22 +114,10 @@
     "sha256": "2b20fbbf31439a5792c808085ecd4c9dc5addeb6195c6d113a25e77f7acc0f4f"
   },
   {
-    "file": "haru/sounds/haru_talk_13.wav",
-    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Haru/sounds/haru_talk_13.wav",
-    "bytes": 138862,
-    "sha256": "a0890e39bd46e45469e6ea3da96859957f161bbef19146591c8437ed57d0bb0f"
-  },
-  {
     "file": "haru/motions/haru_g_m06.motion3.json",
     "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Haru/motions/haru_g_m06.motion3.json",
     "bytes": 15118,
     "sha256": "311c544c67282cbc40ac1e0287751b20a7f49a46f4eea989b7071efc3188053c"
-  },
-  {
-    "file": "haru/sounds/haru_Info_14.wav",
-    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Haru/sounds/haru_Info_14.wav",
-    "bytes": 267922,
-    "sha256": "a1723f7f6a7858882091d50b4762f063e577a671630b0d910b429c49804fa0c7"
   },
   {
     "file": "haru/motions/haru_g_m20.motion3.json",
@@ -132,22 +126,388 @@
     "sha256": "536e467d6533c0883b2ad6c8915bc632b4d4188fc3d3abb19cc6b4f5fd12ddb9"
   },
   {
-    "file": "haru/sounds/haru_normal_6.wav",
-    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Haru/sounds/haru_normal_6.wav",
-    "bytes": 142374,
-    "sha256": "7cbee57fa4a59bf5e645b19408df0a1869a4d2d7234d5bfd8e0849262dd39c6d"
-  },
-  {
     "file": "haru/motions/haru_g_m09.motion3.json",
     "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Haru/motions/haru_g_m09.motion3.json",
     "bytes": 25066,
     "sha256": "d6c8abb01dcfee8246cccbe7a437f025cb31884f8408f3207e1a6e4139888e45"
   },
   {
-    "file": "haru/sounds/haru_Info_04.wav",
-    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Haru/sounds/haru_Info_04.wav",
-    "bytes": 111354,
-    "sha256": "df9bdccee25492b1787bde80877a0bbbe442c71385083ce63987ff4d7aba456d"
+    "file": "hiyori/Hiyori.model3.json",
+    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Hiyori/Hiyori.model3.json",
+    "bytes": 1736,
+    "sha256": "973cb3392f7b01f5f73e9d3fedc495a81a0f3ee8014e5df72ef943311c56ee12"
+  },
+  {
+    "file": "hiyori/Hiyori.moc3",
+    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Hiyori/Hiyori.moc3",
+    "bytes": 443648,
+    "sha256": "0323f5f377b9afef54318be09e9b4eea2a8cb266190ff9d2f843f95ecb77716c"
+  },
+  {
+    "file": "hiyori/Hiyori.physics3.json",
+    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Hiyori/Hiyori.physics3.json",
+    "bytes": 26160,
+    "sha256": "c7a6d641893519c0bbc615545887f03f6c5b8031b4096873740b618370452fc1"
+  },
+  {
+    "file": "hiyori/Hiyori.pose3.json",
+    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Hiyori/Hiyori.pose3.json",
+    "bytes": 166,
+    "sha256": "ff1cc242790f196c87a7379dc1340b608723db60af1b2825e00da8f351ffc1bf"
+  },
+  {
+    "file": "hiyori/Hiyori.cdi3.json",
+    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Hiyori/Hiyori.cdi3.json",
+    "bytes": 9660,
+    "sha256": "0fc3fc76b7a68136056c8832c930c8af9f93899f359eded7349b481ea2342d03"
+  },
+  {
+    "file": "hiyori/Hiyori.userdata3.json",
+    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Hiyori/Hiyori.userdata3.json",
+    "bytes": 623,
+    "sha256": "75fe50a89ea695b46c98dce8991c2f3d67e3d7a479786e6310460289b552d29b"
+  },
+  {
+    "file": "hiyori/Hiyori.2048/texture_00.png",
+    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Hiyori/Hiyori.2048/texture_00.png",
+    "bytes": 1814312,
+    "sha256": "560aea0d910dc04950d669640b2ef17c0d817969e9909f477f166bb5cbd8ffbe"
+  },
+  {
+    "file": "hiyori/Hiyori.2048/texture_01.png",
+    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Hiyori/Hiyori.2048/texture_01.png",
+    "bytes": 2504416,
+    "sha256": "87fe9ab7db81ab3025e0407229e449233581e00fa92c8e911923bc6c7d98ce84"
+  },
+  {
+    "file": "hiyori/motions/Hiyori_m01.motion3.json",
+    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Hiyori/motions/Hiyori_m01.motion3.json",
+    "bytes": 10622,
+    "sha256": "c4f0d982c685b81c1af0ced96c8f6bd5118b8a3fa972c3a12a46652b8d78461d"
+  },
+  {
+    "file": "hiyori/motions/Hiyori_m02.motion3.json",
+    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Hiyori/motions/Hiyori_m02.motion3.json",
+    "bytes": 14248,
+    "sha256": "858c582874a0c4badfec38d4caf19e232fea5ba714f5a2ac6a282c617910c154"
+  },
+  {
+    "file": "hiyori/motions/Hiyori_m03.motion3.json",
+    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Hiyori/motions/Hiyori_m03.motion3.json",
+    "bytes": 12732,
+    "sha256": "de33a8ce78226a5ff80cfa941fb5a4c50b6c1c4b346031ed44b384f772b62cf9"
+  },
+  {
+    "file": "hiyori/motions/Hiyori_m05.motion3.json",
+    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Hiyori/motions/Hiyori_m05.motion3.json",
+    "bytes": 16061,
+    "sha256": "7f71061c9207ac1da6e06098ede9318307a7e75715a3ef97c82646acd9ee8620"
+  },
+  {
+    "file": "hiyori/motions/Hiyori_m06.motion3.json",
+    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Hiyori/motions/Hiyori_m06.motion3.json",
+    "bytes": 19492,
+    "sha256": "55c007646febe4cb76d20cbb0623086986dbb55c7ef82212693a5e26636a32ef"
+  },
+  {
+    "file": "hiyori/motions/Hiyori_m07.motion3.json",
+    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Hiyori/motions/Hiyori_m07.motion3.json",
+    "bytes": 9636,
+    "sha256": "3f06cb70f5654eed3389978885e4dff151b6cf9e8d59248680addcd267ff793a"
+  },
+  {
+    "file": "hiyori/motions/Hiyori_m08.motion3.json",
+    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Hiyori/motions/Hiyori_m08.motion3.json",
+    "bytes": 10551,
+    "sha256": "66022fff5cff3c30b7fc1295bf92e4975e3ab9980d5cb296b5e24a2a8acc6daf"
+  },
+  {
+    "file": "hiyori/motions/Hiyori_m09.motion3.json",
+    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Hiyori/motions/Hiyori_m09.motion3.json",
+    "bytes": 11479,
+    "sha256": "9edbd6a88e977221fa90625b5f94c9fd27212e1183288105584be8272543ade7"
+  },
+  {
+    "file": "hiyori/motions/Hiyori_m10.motion3.json",
+    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Hiyori/motions/Hiyori_m10.motion3.json",
+    "bytes": 9604,
+    "sha256": "ba0ba6764a80459432ffd48d6bd5ba261fd25f196208ade3016be74efb9d3dfc"
+  },
+  {
+    "file": "hiyori/motions/Hiyori_m04.motion3.json",
+    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Hiyori/motions/Hiyori_m04.motion3.json",
+    "bytes": 8772,
+    "sha256": "54ddb94d0494772e10355429c547bb7e29601f38d663087804b0c793b29cc51f"
+  },
+  {
+    "file": "natori/Natori.model3.json",
+    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Natori/Natori.model3.json",
+    "bytes": 1849,
+    "sha256": "d791d0bd0a98f8165a9b88ef6b1b781389bea8164e5234ce0f68335efd20cfe7"
+  },
+  {
+    "file": "natori/Natori.moc3",
+    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Natori/Natori.moc3",
+    "bytes": 771072,
+    "sha256": "8f3122e2d3b5a30f79d95078ac756e45ea5df740f3e72f461cdec793303bf94f"
+  },
+  {
+    "file": "natori/Natori.physics3.json",
+    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Natori/Natori.physics3.json",
+    "bytes": 15575,
+    "sha256": "d280a0088b17df4ddaf8fb417b5ee11601bd40686a91540eaaf0e5eeb69eb874"
+  },
+  {
+    "file": "natori/Natori.pose3.json",
+    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Natori/Natori.pose3.json",
+    "bytes": 480,
+    "sha256": "e3feed602d86d4dc37365622db1c2950dd6707e13cd9a29afa7f9dc9fcebe398"
+  },
+  {
+    "file": "natori/Natori.cdi3.json",
+    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Natori/Natori.cdi3.json",
+    "bytes": 12262,
+    "sha256": "b2676c103b172a7a3701395688f5ab0a7e2b71b417fb89750388685f84edbb6e"
+  },
+  {
+    "file": "natori/Natori.2048/texture_00.png",
+    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Natori/Natori.2048/texture_00.png",
+    "bytes": 2492342,
+    "sha256": "d1dc7315a1b60149e540d26186f8f97ca52e55094e174b59ef0f6bcbc7d93dc7"
+  },
+  {
+    "file": "natori/exp/Angry.exp3.json",
+    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Natori/exp/Angry.exp3.json",
+    "bytes": 1860,
+    "sha256": "ff21ddb9b1dbf40f6114e59c8d31f0592e54d0110be25ba4cefaac62b808cbb8"
+  },
+  {
+    "file": "natori/exp/Blushing.exp3.json",
+    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Natori/exp/Blushing.exp3.json",
+    "bytes": 1848,
+    "sha256": "d77e289b18e7ce9914dec187f0f1cbf83669ccaa9416fc1034d21aeded91ad93"
+  },
+  {
+    "file": "natori/exp/Normal.exp3.json",
+    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Natori/exp/Normal.exp3.json",
+    "bytes": 1845,
+    "sha256": "bc3e5f4f3bb3fb0c783915c0bae2fbb65fb6b4ca5779433972dc0b0aea1fca39"
+  },
+  {
+    "file": "natori/exp/Sad.exp3.json",
+    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Natori/exp/Sad.exp3.json",
+    "bytes": 1850,
+    "sha256": "cd051c97f0c1981e7207cefcc87d1769601234ea14294d153b89ec0d45bc7034"
+  },
+  {
+    "file": "natori/exp/Smile.exp3.json",
+    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Natori/exp/Smile.exp3.json",
+    "bytes": 1847,
+    "sha256": "06e5a7eedb082e20252a87bd996fa163c53d934b06e43a268494ba25f1e94ba6"
+  },
+  {
+    "file": "natori/exp/Surprised.exp3.json",
+    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Natori/exp/Surprised.exp3.json",
+    "bytes": 1865,
+    "sha256": "e7dc9ac4dbea6b9a98f5296b6df3e29727a1e2955bd198c4f5e9f47c0bf2d3e9"
+  },
+  {
+    "file": "natori/exp/exp_01.exp3.json",
+    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Natori/exp/exp_01.exp3.json",
+    "bytes": 1851,
+    "sha256": "f9175f600bdbd1a0206264c0915d1a7bab595ac749c6da0db01365f99b8efda4"
+  },
+  {
+    "file": "natori/exp/exp_02.exp3.json",
+    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Natori/exp/exp_02.exp3.json",
+    "bytes": 1853,
+    "sha256": "c9c098b9721aef0f5c63d99960381e8a21bb366a4da14f902b2ffe734bcc95e1"
+  },
+  {
+    "file": "natori/exp/exp_03.exp3.json",
+    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Natori/exp/exp_03.exp3.json",
+    "bytes": 1848,
+    "sha256": "8f416a2fff0a3bbaf719414de46458e6675e109e8c93cf70019b4bba9af956cd"
+  },
+  {
+    "file": "natori/exp/exp_04.exp3.json",
+    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Natori/exp/exp_04.exp3.json",
+    "bytes": 1864,
+    "sha256": "28e6ad30a14f485eda54e8bc6ea89a0183df15b0a120729a704d265fa265b5ad"
+  },
+  {
+    "file": "natori/exp/exp_05.exp3.json",
+    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Natori/exp/exp_05.exp3.json",
+    "bytes": 1848,
+    "sha256": "ace45afdd9b5bab06b45a69c4cf23ca5d8a494448c32cb7fcee3f1db5f5a1fb3"
+  },
+  {
+    "file": "natori/motions/mtn_00.motion3.json",
+    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Natori/motions/mtn_00.motion3.json",
+    "bytes": 15644,
+    "sha256": "a72450ad79739192fca350c327ec45b699d9fafb25304180a5283c9746ee5a44"
+  },
+  {
+    "file": "natori/motions/mtn_01.motion3.json",
+    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Natori/motions/mtn_01.motion3.json",
+    "bytes": 19926,
+    "sha256": "d2cd0c9315b9058cceb898b71b8e660c14c6e41f59b7b1ba2cf8d9d25b6699b7"
+  },
+  {
+    "file": "natori/motions/mtn_02.motion3.json",
+    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Natori/motions/mtn_02.motion3.json",
+    "bytes": 22165,
+    "sha256": "68147f88c8dd9d64b138ec36bfc2cc6cea0ec4d288778290684106ed97540ffe"
+  },
+  {
+    "file": "natori/motions/mtn_03.motion3.json",
+    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Natori/motions/mtn_03.motion3.json",
+    "bytes": 25815,
+    "sha256": "79b39209297178e24386b6aebc24e20777fe58ee06b4329c92b878760674283d"
+  },
+  {
+    "file": "natori/motions/mtn_04.motion3.json",
+    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Natori/motions/mtn_04.motion3.json",
+    "bytes": 23692,
+    "sha256": "656b06ca7e748c89d90146427b0cace936ef3af99fae39b15e27f646548cad8b"
+  },
+  {
+    "file": "natori/motions/mtn_05.motion3.json",
+    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Natori/motions/mtn_05.motion3.json",
+    "bytes": 23687,
+    "sha256": "f5b2c88f50c8e1e502579dfccbe84452c80fe9c9026706076a582343374937b0"
+  },
+  {
+    "file": "natori/motions/mtn_06.motion3.json",
+    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Natori/motions/mtn_06.motion3.json",
+    "bytes": 21628,
+    "sha256": "6dce3d2fec68f0e85811c8862652766ac6157403e407552410c68fb1088dd449"
+  },
+  {
+    "file": "natori/motions/mtn_07.motion3.json",
+    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Natori/motions/mtn_07.motion3.json",
+    "bytes": 19460,
+    "sha256": "8b12022b7bdf01e7a9e6f124f043452c6c49432368da0aecc82a550b79e72182"
+  },
+  {
+    "file": "mao/Mao.model3.json",
+    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Mao/Mao.model3.json",
+    "bytes": 1563,
+    "sha256": "952a3e454d701ae765c849a97997e12138704c7f738e25a7d55a25c6828c593a"
+  },
+  {
+    "file": "mao/Mao.moc3",
+    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Mao/Mao.moc3",
+    "bytes": 807488,
+    "sha256": "a9c7010c42ed2cee71c07c62214adde8773ea7b7928e298388972ed00a1d3e23"
+  },
+  {
+    "file": "mao/Mao.physics3.json",
+    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Mao/Mao.physics3.json",
+    "bytes": 21838,
+    "sha256": "27de73695ca6418a84953a0b2776e78160f9d0b988521e9bbfa02ff913f20a6d"
+  },
+  {
+    "file": "mao/Mao.pose3.json",
+    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Mao/Mao.pose3.json",
+    "bytes": 254,
+    "sha256": "efac160eccb7183ee6555d4e53a739042e1c55b92f59a99c2e4bed8e73a5ab91"
+  },
+  {
+    "file": "mao/Mao.cdi3.json",
+    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Mao/Mao.cdi3.json",
+    "bytes": 14356,
+    "sha256": "9d710cb5f4ed1e059f55e2bdc2e2afc38d5036bb602c149fa531e1eb84486f86"
+  },
+  {
+    "file": "mao/Mao.2048/texture_00.png",
+    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Mao/Mao.2048/texture_00.png",
+    "bytes": 3373441,
+    "sha256": "10280de402e130c08a9f87e0df6ce6b094638764ae1baf262bd44db8a4feeab9"
+  },
+  {
+    "file": "mao/expressions/exp_01.exp3.json",
+    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Mao/expressions/exp_01.exp3.json",
+    "bytes": 1996,
+    "sha256": "95379bac4a9218988919625519066773e3bc7ec5d6346da00b052ce301d5c479"
+  },
+  {
+    "file": "mao/expressions/exp_02.exp3.json",
+    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Mao/expressions/exp_02.exp3.json",
+    "bytes": 2002,
+    "sha256": "6029bb4e1d9b655a70870575174f11230effe2452401143c73e23e636625943a"
+  },
+  {
+    "file": "mao/expressions/exp_03.exp3.json",
+    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Mao/expressions/exp_03.exp3.json",
+    "bytes": 2002,
+    "sha256": "ecefc4ddff43fd7e4f513a553a3af8e8e21dc254314c4d7785835b9fa3fb159e"
+  },
+  {
+    "file": "mao/expressions/exp_04.exp3.json",
+    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Mao/expressions/exp_04.exp3.json",
+    "bytes": 2010,
+    "sha256": "aa9322e34ef2de5e55eaf57266a78952a70baac5e0e2e4a0663b7b8652fdd0b3"
+  },
+  {
+    "file": "mao/expressions/exp_05.exp3.json",
+    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Mao/expressions/exp_05.exp3.json",
+    "bytes": 2001,
+    "sha256": "cdb5ee9796372a2d318c7c9c0b67a116fa0257b06c4dbc29cc3547e3ece058cc"
+  },
+  {
+    "file": "mao/expressions/exp_06.exp3.json",
+    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Mao/expressions/exp_06.exp3.json",
+    "bytes": 2000,
+    "sha256": "8c67d55e11af311638a0d262e8cf4c8fe697e4dd94667f00921e4ba77facc8be"
+  },
+  {
+    "file": "mao/expressions/exp_07.exp3.json",
+    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Mao/expressions/exp_07.exp3.json",
+    "bytes": 2012,
+    "sha256": "ddfe38c22aaba7947eff70b6abd00bb4fe76499f7b2eaae11723e1e1df20c6d2"
+  },
+  {
+    "file": "mao/expressions/exp_08.exp3.json",
+    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Mao/expressions/exp_08.exp3.json",
+    "bytes": 1997,
+    "sha256": "bc7dfefe664026a3f527afd6b4448018a1b76e89ae45ed6ca63731663af77507"
+  },
+  {
+    "file": "mao/motions/mtn_01.motion3.json",
+    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Mao/motions/mtn_01.motion3.json",
+    "bytes": 25161,
+    "sha256": "17ce321fba18ba755bb81a0a217b93e6733e4e916d5c03485c7c98a3e4d6d578"
+  },
+  {
+    "file": "mao/motions/mtn_02.motion3.json",
+    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Mao/motions/mtn_02.motion3.json",
+    "bytes": 21774,
+    "sha256": "43331e7dc709a5b730d7815c43c092beb57083a4707e0d4ceadd85af9eb82346"
+  },
+  {
+    "file": "mao/motions/mtn_03.motion3.json",
+    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Mao/motions/mtn_03.motion3.json",
+    "bytes": 20474,
+    "sha256": "0d34deeea02bd73e675dbbf02fa195b0c1c323bc86ad34358a420dcbb1bd20fc"
+  },
+  {
+    "file": "mao/motions/mtn_04.motion3.json",
+    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Mao/motions/mtn_04.motion3.json",
+    "bytes": 24886,
+    "sha256": "99520131156d64a0c00cb68a67333a0dcbb8738aeff52f4d2584becbd23d0981"
+  },
+  {
+    "file": "mao/motions/special_01.motion3.json",
+    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Mao/motions/special_01.motion3.json",
+    "bytes": 31769,
+    "sha256": "e16c4e587918099cef32f8764c7b8100b23e65bb6553b24dbbea507737ba3a8c"
+  },
+  {
+    "file": "mao/motions/special_02.motion3.json",
+    "url": "https://raw.githubusercontent.com/Live2D/CubismWebSamples/4-r.7/Samples/Resources/Mao/motions/special_02.motion3.json",
+    "bytes": 39309,
+    "sha256": "f0c999ff4faca7688043401cd2fcffc7473df1133070557e1b63f05f9a0fd15b"
   },
   {
     "file": "LICENSE.samples.md",

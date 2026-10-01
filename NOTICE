@@ -23,7 +23,8 @@ separately before redistribution:
 
 Live2D models and the Cubism SDK are NOT Apache-licensed. The Cubism SDK has
 its own commercial terms. Local downloaded files in desktop/public/assets/live2d
-include the official Haru sample (CubismWebSamples 4-r.7, copyright Live2D Inc.)
+include the official Haru, Hiyori, Natori and Mao samples (CubismWebSamples
+4-r.7, copyright Live2D Inc.)
 under the Live2D Free Material License and Cubism Core under the Live2D
 Proprietary Software License. See docs/live2d.md and the downloaded
 LICENSE.samples.md and provenance.json for sources and applicable terms.
@@ -33,3 +34,7 @@ clips redistributed by Hanami, licensed Apache-2.0. See that directory's
 NOTICE-Hanami.md, LICENSE-Apache-2.0.txt, and provenance.json for source,
 attribution, pinned revision, and checksums. The three-vrm-animation runtime
 module is MIT-licensed by pixiv.
+
+The lip-sync profile in desktop/public/assets/lipsync/profile.json and the
+wlipsync runtime are MIT-licensed (copyright 2021 hecomi, 2024 Noeri Huisman).
+Desktop runtime libraries: markdown-it and fflate (MIT), idb-keyval (Apache-2.0).
