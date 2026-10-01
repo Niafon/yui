@@ -1,0 +1,52 @@
+{
+  "source": "https://github.com/Undi95/Hanami/tree/6787685c8d40e4e79bffbb0d389b478f32ef88d6/vrma",
+  "revision": "6787685c8d40e4e79bffbb0d389b478f32ef88d6",
+  "license": "Apache-2.0 (Overte-derived clips)",
+  "assets": [
+    {
+      "file": "angry.vrma",
+      "sha256": "02868bf70e858854013e37bca4b945e334eddfb509a4b90c73791cf18f96f6d6",
+      "bytes": 108804
+    },
+    {
+      "file": "happy.vrma",
+      "sha256": "55b69cf6ed4213adeba1279cb85015c136cbaa5ecefc5211f4f595fc454d6b39",
+      "bytes": 207564
+    },
+    {
+      "file": "idle-talking.vrma",
+      "sha256": "74f50c1b63bb8c2b19276dd7db26c9e8096da72acb521d4e635b059730e78bd8",
+      "bytes": 268464
+    },
+    {
+      "file": "idle.vrma",
+      "sha256": "9563c582418bd5b51da473ea85b41722cb5304f84128935c3b570c72316c444a",
+      "bytes": 193244
+    },
+    {
+      "file": "neutral.vrma",
+      "sha256": "91642c3593383d6b8e3d7ae2e5e408abac89a2baa31d2c1a3b625a46b0ab92b6",
+      "bytes": 237868
+    },
+    {
+      "file": "nod.vrma",
+      "sha256": "c5f715092eacacc827b52c984ebd5c8b8d991b2e34102fbc03235b01c6bcbbe8",
+      "bytes": 137860
+    },
+    {
+      "file": "relaxed.vrma",
+      "sha256": "5e3849bc677f63fb5952583c39102ffdf1adb08b32baa3e4b9de54630a3bb3b9",
+      "bytes": 216212
+    },
+    {
+      "file": "sad.vrma",
+      "sha256": "7d011478fbff385bdde6ea0314a4035740571c5fdfb9902c8799fdb8ce189626",
+      "bytes": 151204
+    },
+    {
+      "file": "think.vrma",
+      "sha256": "e28485c2606b4b27869dee84d0a4be7cff9d6eb1a573cf1ea33b3d5a4b5aa3f9",
+      "bytes": 142404
+    }
+  ]
+}

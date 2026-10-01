@@ -1,0 +1,121 @@
+# История изменений
+
+Формат: [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/).
+Версии — [SemVer](https://semver.org/lang/ru/). До 1.0 контракты могут меняться.
+
+## [0.3.1] — 2026-09-05
+
+### Adaptive local inference
+
+- Добавлен `core/internal/inference`: Model Registry metadata, Resource Monitor, task complexity scoring и Model/Backend Scheduler.
+- Режимы `auto`, `max_quality`, `balanced`, `gaming`, `manual`; ручной session/provider lock имеет высший приоритет.
+- Model lock фиксирует `model_family`, но разрешает CPU/GPU/hybrid варианты той же модели.
+- Windows telemetry: CPU/RAM/foreground process через WinAPI, GPU/VRAM через `nvidia-smi`; внешний FPS/frametime telemetry поддерживается через API.
+- FPS guardrail запрещает GPU inference при падении относительно baseline выше пользовательского лимита.
+- Managed inference workers cold-start'ятся через Supervisor; Auto пропускает недоступный профиль, Manual не делает тихий fallback.
+- LLM/STT/TTS/Vision теперь могут выбирать provider непосредственно перед inference.
+- Desktop Stage получил вкладку `AI Runtime`: режим, model lock, quality floor, downgrade policy, текущие ресурсы и объяснение выбора.
+- Пример конфигурации содержит Qwen 3.5 9B GPU/CPU и Qwen 3.5 4B CPU профили для llama.cpp.
+
+## [0.3.0] — 2026-09-05
+
+### Memory/storage rewrite
+
+- PostgreSQL + pgvector перестали быть обязательным production backend для local mode.
+- Новый default: embedded SQLite, WAL, FTS5/BM25 и один `data/yui.db`.
+- Semantic retrieval — exact in-process cosine cache без ANN/HNSW, с rebuild из durable embeddings; cache хранится последовательным массивом + O(1) id-index для дешёвого scan/update.
+- `MemoryRepo` получил отдельный `LexicalSearch`; hybrid retrieval теперь использует настоящий FTS5 вместо recency scan.
+- Embeddings хранятся как compact float32 BLOB с динамической размерностью.
+- Default embeddings: Qwen3-Embedding-0.6B, Matryoshka 256d; query prompt применяется только на query side.
+- Windows installer больше не требует PostgreSQL/pgvector/Docker; для native SQLite требуется GCC/CGO.
+- CI проверяет SQLite/FTS5 backend. Legacy PostgreSQL код и migrations оставлены для экспорта v0.2.
+
+## [0.2.0] — 2026-08-28
+
+Обновление под то, что вышло за август: Go 1.27, pgvector 0.8, мультимодальная
+Qwen 3.5. Подробности и обоснование — `docs/decisions.md`, ADR-032…036.
+
+### Изменено
+
+- **Go 1.22 → 1.27.** Green Tea GC по умолчанию (−10…40% накладных расходов
+  сборщика на долгоживущем процессе), `encoding/json` v2 под капотом (JSON у
+  нас на горячем пути), профиль `goroutineleak`, `testing/synctest`.
+- **Зрение через резидентную мультимодальную LLM** вместо отдельного VLM:
+  −2…3 ГБ VRAM и никакой загрузки-выгрузки модели. Выделенный VLM остался
+  драйвером и переключается одной строкой.
+- **pgvector: halfvec и итеративные сканы.** Индекс вдвое меньше; фильтрованный
+  поиск перестал «недобирать» результаты при селективных фильтрах.
+- Tauri 2.0 → 2.11, образ БД → `pgvector/pgvector:pg16`.
+
+### Добавлено
+
+- Затирание ключевого материала (`zero`) и опциональный `runtime/secret` под
+  тегом `yuisecret`.
+- Постквантовый обмен ключами в TLS: X25519MLKEM768 запрашивается явно.
+- Loopback-only диагностика: `/debug/pprof`, `/debug/runtime`, фоновая проверка
+  утечки горутин. Выключена по умолчанию.
+- Ограничения заголовков HTTP (`MaxHeaderBytes`, `MaxHeaderValueCount`).
+- Пять детерминированных тестов планировщика на `synctest`, включая отмену
+  уже запущенного задания при начале разговора.
+- Миграция `0004_vector_tuning.sql`.
+
+### Исправлено
+
+- **Идентификатор ключа шифрования выводился из первых шести байт самого DEK** —
+  48 бит ключа лежали открытым текстом в файле ключа и рядом с каждой
+  зашифрованной записью. Теперь это независимое случайное значение.
+  Закрыто тестом.
+
+## [0.1.0] — 2026-08-04
+
+Первая сборка: Этап 1 (Foundation) плюс сквозной срез Этапов 2–3 по SRS v0.1.
+
+### Добавлено
+
+**Ядро (Go)**
+- Единый процесс `yui-core`: сессии, turn-пайплайн со стримингом, планировщик
+  фоновых задач, супервизор внешних процессов.
+- Permission Engine: subject × категория × действие; `FilterForProvider` —
+  единственная точка выхода данных наружу, с manifest каждого вызова.
+- Долговременная память: структурированные факты, версии и исправление,
+  корзина, TTL, гибридный поиск (pgvector + лексика), извлечение фактов из речи.
+- Личности: пресет 18+, черты, режимы развития с ограничением дрейфа,
+  VAD-эмоции, выражения аватара.
+- Инструменты: реестр с оценкой риска, подтверждения по SRS 16.5, встроенный
+  набор из десяти инструментов низкого и среднего риска.
+- Шифрование: envelope encryption (Argon2id + AES-256-GCM), восстановление по
+  паролю или recovery-ключу.
+- Провайдеры: единый интерфейс LLM/STT/TTS/Vision/Embeddings; драйверы
+  `openai`, `worker`, `mock`.
+- Транспорт: HTTP и собственная реализация WebSocket (RFC 6455); control и
+  data планы разделены.
+- Хранилище: PostgreSQL + pgvector, плюс file-backed dev-хранилище.
+
+**Воркеры (Python)** — HTTP-контракт, hash-embeddings, placeholder STT/TTS/
+Vision, точки подключения faster-whisper / CosyVoice / sentence-transformers,
+выгрузка vision-модели по простою.
+
+**Клиенты** — Tauri 2 + TypeScript (сцена, presence-лента, журналы памяти и
+передачи данных), Flutter + Kotlin (сопряжение, сессия, foreground service).
+
+**Контракты** — protobuf: control, data, память, воркеры.
+
+### Решения
+
+- Лицензия Apache-2.0 (ADR-015).
+- Профиль RTX 3080 10 ГБ и распределение моделей по устройствам (ADR-016, 017).
+- pgvector + HNSW как semantic index (ADR-018).
+- PostgreSQL — хранилище по умолчанию (ADR-019).
+- Режимы wake word и barge-in вместо одного зашитого поведения (ADR-020, 021).
+- Envelope encryption и восстановление по паролю (ADR-024, 025).
+
+Полный список — `docs/decisions.md`.
+
+### Известные ограничения
+
+- Модели выбраны, но не подтверждены замерами на реальном железе (TBD-07).
+- Верификация голоса владельца отложена (ADR-022).
+- `crypto` готов и покрыт тестами, но память пока пишет `content` открытым
+  текстом: колонки `content_cipher` созданы, подключение — следующий шаг.
+- `remote.mode=relay` объявлен и намеренно отклоняется при старте (ADR-029).
+- Плагинов нет, изоляция не решена (ADR-030).

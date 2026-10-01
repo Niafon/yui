@@ -1,0 +1,25 @@
+# Legacy v0.2 PostgreSQL backend. New local installs use embedded SQLite.
+# PostgreSQL для разработки. В проде ядро ставится вместе с локальной БД —
+# docker не является требованием к конечному пользователю (NFR-004 портируемость).
+services:
+  postgres:
+    # Образ с pgvector: расширение нужно с миграции 0002 (ADR-018, ADR-033).
+    image: pgvector/pgvector:pg16
+    container_name: yui-postgres
+    environment:
+      POSTGRES_USER: yui
+      POSTGRES_PASSWORD: yui
+      POSTGRES_DB: yui
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - yui-pgdata:/var/lib/postgresql/data
+      - ../core/migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U yui -d yui"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  yui-pgdata:

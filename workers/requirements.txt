@@ -1,0 +1,16 @@
+# Воркеры работают на голой стандартной библиотеке: placeholder-бэкенды не
+# требуют ничего. Ниже — опциональные пакеты для настоящих моделей.
+# Устанавливайте только то, что реально используете (TBD-07).
+
+# STT
+# faster-whisper>=1.0.0
+
+# TTS
+# TTS>=0.22.0
+
+# Embeddings
+# sentence-transformers>=5.0.0  # Qwen3 + truncate_dim/Matryoshka
+
+# Vision (VLM + OCR)
+# transformers>=4.44.0
+# pillow>=10.0.0

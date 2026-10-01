@@ -1,0 +1,72 @@
+syntax = "proto3";
+
+// Data plane: high frequency streams. Everything here is bounded and may be
+// dropped under backpressure without breaking the conversation (SRS 5.4).
+
+package yui.v1;
+
+import "yui/v1/common.proto";
+
+option go_package = "github.com/yui-companion/core/gen/yui/v1;yuiv1";
+
+message AudioFormat {
+  uint32 sample_rate = 1;
+  uint32 channels = 2;
+  string encoding = 3; // pcm16 | opus
+}
+
+// Contract C.2
+message AudioChunk {
+  string session_id = 1;
+  string stream_id = 2;
+  uint64 sequence = 3;
+  int64 captured_at_ms = 4;
+  AudioFormat format = 5;
+  bytes data = 6;
+  bool end_of_stream = 7;
+}
+
+message Transcript {
+  Envelope envelope = 1;
+  string text = 2;
+  double confidence = 3;
+  bool final = 4;
+  string language = 5;
+  // Unset means unknown; false means the speech was not the owner's and must
+  // be treated as context only (VOICE-005, VOICE-009).
+  optional bool speaker_is_owner = 6;
+}
+
+message TurnDelta {
+  Envelope envelope = 1;
+  string text = 2;
+  bool done = 3;
+  uint32 latency_ms = 4;
+}
+
+message SpeechChunk {
+  Envelope envelope = 1;
+  uint64 sequence = 2;
+  AudioFormat format = 3;
+  bytes data = 4;
+  bool final = 5;
+  string target_device = 6;
+}
+
+message VideoFrame {
+  string session_id = 1;
+  uint64 sequence = 2;
+  int64 captured_at_ms = 3;
+  string mime = 4;
+  bytes data = 5;
+  string question = 6;
+}
+
+message VisionObservation {
+  Envelope envelope = 1;
+  string description = 2;
+  repeated string objects = 3;
+  string ocr_text = 4;
+  double confidence = 5;
+  string frame_ref = 6;
+}

@@ -1,0 +1,4 @@
+sentence-transformers==5.7.0
+faster-whisper==1.2.1
+piper-tts==1.8.0
+cryptography==50.0.1

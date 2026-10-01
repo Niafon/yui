@@ -1,0 +1,74 @@
+syntax = "proto3";
+
+// Memory contracts. A candidate is not a memory: it becomes one only after
+// policy, confidence and deduplication are applied (SRS 10.7).
+
+package yui.v1;
+
+import "yui/v1/common.proto";
+
+option go_package = "github.com/yui-companion/core/gen/yui/v1;yuiv1";
+
+enum MemoryType {
+  MEMORY_TYPE_UNSPECIFIED = 0;
+  MEMORY_RAW_TRANSCRIPT   = 1;
+  MEMORY_EPISODIC         = 2;
+  MEMORY_SEMANTIC_FACT    = 3;
+  MEMORY_SUMMARY          = 4;
+  MEMORY_FRAME            = 5;
+  MEMORY_VIDEO_SEGMENT    = 6;
+  MEMORY_ARCHIVE          = 7;
+}
+
+message ProvenanceRef {
+  string kind = 1; // conversation|vision|external|inference|user
+  string ref = 2;
+  string device_id = 3;
+  int64 at_ms = 4;
+}
+
+// Contract C.3
+message MemoryCandidate {
+  string identity_id = 1;
+  string memory_space_id = 2;
+  MemoryType type = 3;
+  string normalized_content = 4;
+  float confidence = 5;
+  float importance = 6;
+  repeated ProvenanceRef provenance = 7;
+  Sensitivity sensitivity = 8;
+  bool requires_confirmation = 9;
+  Category category = 10;
+  string subject = 11;
+}
+
+message MemoryItem {
+  string id = 1;
+  string space_id = 2;
+  string identity_id = 3;
+  uint32 version = 4;
+  MemoryType type = 5;
+  Category category = 6;
+  string subject = 7;
+  string content = 8;
+  float confidence = 9;
+  float importance = 10;
+  Sensitivity sensitivity = 11;
+  string status = 12;
+  int64 occurred_at_ms = 13;
+  int64 recorded_at_ms = 14;
+  int64 expires_at_ms = 15;
+  bool pinned = 16;
+  repeated ProvenanceRef provenance = 17;
+  string superseded_by = 18;
+}
+
+// Contract C.4 in protobuf form: what actually left the machine.
+message ProviderRequestManifest {
+  string provider = 1;
+  string purpose = 2;
+  repeated Category included_categories = 3;
+  repeated Category excluded_categories = 4;
+  string policy_decision_id = 5;
+  string trace_id = 6;
+}

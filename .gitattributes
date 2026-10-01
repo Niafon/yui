@@ -1,0 +1,19 @@
+* text=auto eol=lf
+
+# Скрипты Windows должны сохранять CRLF, иначе PowerShell и cmd их не поймут.
+*.ps1  text eol=crlf
+*.cmd  text eol=crlf
+*.bat  text eol=crlf
+
+# Бинарные ресурсы не диффать.
+*.png  binary
+*.jpg  binary
+*.ico  binary
+*.wav  binary
+*.onnx binary
+*.gguf binary
+*.moc3 binary
+
+# Схема и лицензия — не менять по невнимательности.
+LICENSE      linguist-generated=false
+*.proto      linguist-language=Protocol Buffer

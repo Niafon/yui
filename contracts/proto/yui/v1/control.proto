@@ -1,0 +1,97 @@
+syntax = "proto3";
+
+// Control plane: lifecycle, configuration, permissions, state. Low volume,
+// must never queue behind audio or video (SRS 5.2).
+
+package yui.v1;
+
+import "yui/v1/common.proto";
+
+option go_package = "github.com/yui-companion/core/gen/yui/v1;yuiv1";
+
+message Hello {
+  Envelope envelope = 1;
+  DeviceMetadata device = 2;
+  uint32 supported_protocol_version = 3;
+}
+
+// Contract C.1
+message CapabilityAnnouncement {
+  string node_id = 1;
+  string protocol_version = 2;
+  repeated Capability provided = 3;
+  repeated Capability requested = 4;
+  DeviceMetadata device = 5;
+}
+
+message SessionStart {
+  Envelope envelope = 1;
+  string identity_id = 2;
+  string mode = 3;
+  map<string, string> providers = 4; // llm|stt|tts|vision|embeddings -> provider id
+}
+
+message SessionState {
+  Envelope envelope = 1;
+  string state = 2; // idle|listening|thinking|speaking|acting|error|closed
+  string output_device = 3;
+  bool microphone_muted = 4;
+}
+
+message AvatarExpression {
+  Envelope envelope = 1;
+  string label = 2;      // neutral|joy|warm|concern|sad|alert|calm
+  string expression = 3; // presentation-specific id
+  double valence = 4;
+  double arousal = 5;
+}
+
+message MemoryIndicator {
+  Envelope envelope = 1;
+  string memory_id = 2;
+  string content = 3;
+  string status = 4;
+  Category category = 5;
+}
+
+// Contract C.5
+message ConfirmationRequest {
+  string invocation_id = 1;
+  RiskLevel risk = 2;
+  string human_readable_action = 3;
+  repeated string data_categories = 4;
+  ConfirmationMethod required_method = 5;
+  int64 expires_at_ms = 6;
+}
+
+message ConfirmationResponse {
+  string invocation_id = 1;
+  bool approved = 2;
+  ConfirmationMethod used_method = 3;
+  bool remember = 4;
+}
+
+message PermissionRequest {
+  string request_id = 1;
+  string subject_kind = 2; // identity|provider|plugin|device
+  string subject_id = 3;
+  Category category = 4;
+  string action = 5;       // read|append|update|delete|export|transmit|invoke
+  string provider_id = 6;
+  ConfirmationMethod required_method = 7;
+}
+
+message ToolInvocation {
+  Envelope envelope = 1;
+  string invocation_id = 2;
+  string tool = 3;
+  string arguments_json = 4;
+  RiskLevel risk = 5;
+}
+
+message ErrorFrame {
+  Envelope envelope = 1;
+  string stage = 2; // stt|llm|tts|vision|policy|context
+  string message = 3;
+  bool recoverable = 4;
+}

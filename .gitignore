@@ -1,0 +1,54 @@
+# build output
+/bin/
+/data/
+desktop/dist/
+desktop/node_modules/
+desktop/src-tauri/target/
+mobile/build/
+mobile/.dart_tool/
+
+# local configuration and secrets
+yui.config.json
+*.pem
+*.key
+
+# python
+__pycache__/
+*.pyc
+.venv/
+.venv-computer/
+yui.orchestration.json
+*.before-orchestration-*
+.cache/
+artifacts/
+models/*
+!models/README.md
+!models/installed-manifest.json
+desktop/public/yui-ca.crt
+
+# editors
+.idea/
+.vscode/
+.DS_Store
+
+# local tooling and caches
+/.agents/
+/.codex/
+/.design/
+/.go/
+/.gocache/
+/.jevrouter/
+/.jez/
+/.playwright-mcp/
+
+# machine-specific configuration and runtime files
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.log
+*.p12
+*.pfx
+*.jks
+*.keystore
+local.properties

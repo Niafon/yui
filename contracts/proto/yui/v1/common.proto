@@ -1,0 +1,86 @@
+syntax = "proto3";
+
+// Shared vocabulary for every Yui contract. Message versioning is explicit:
+// a client that speaks an unsupported protocol_version gets a clear error
+// rather than undefined behaviour (NFR-004).
+
+package yui.v1;
+
+option go_package = "github.com/yui-companion/core/gen/yui/v1;yuiv1";
+
+// Envelope is embedded in every control and data message (SRS 18.2).
+message Envelope {
+  uint32 protocol_version = 1;
+  string message_id       = 2;
+  int64  timestamp_ms     = 3;
+  string source           = 4;
+  string correlation_id   = 5;
+  string session_id       = 6;
+  string identity_id      = 7;
+  string device_id        = 8;
+  Sensitivity sensitivity = 9;
+}
+
+enum Sensitivity {
+  SENSITIVITY_UNSPECIFIED = 0;
+  SENSITIVITY_NORMAL      = 1;
+  SENSITIVITY_PRIVATE     = 2;
+  SENSITIVITY_SENSITIVE   = 3;
+  SENSITIVITY_MEDICAL     = 4;
+  SENSITIVITY_BIOMETRIC   = 5;
+}
+
+// Category is the unit permissions and provider policies are written in
+// (SRS 16.3). Adding a category is a contract change on purpose: nothing
+// should ever be transmitted uncategorised.
+enum Category {
+  CATEGORY_UNSPECIFIED     = 0;
+  CATEGORY_CURRENT_TEXT    = 1;
+  CATEGORY_SESSION_SUMMARY = 2;
+  CATEGORY_CONVERSATION    = 3;
+  CATEGORY_PROFILE         = 4;
+  CATEGORY_PREFERENCES     = 5;
+  CATEGORY_PROJECTS        = 6;
+  CATEGORY_CALENDAR        = 7;
+  CATEGORY_CONTACTS        = 8;
+  CATEGORY_PLACES          = 9;
+  CATEGORY_MEDICAL         = 10;
+  CATEGORY_BIOMETRIC       = 11;
+  CATEGORY_FILES           = 12;
+  CATEGORY_VISION          = 13;
+  CATEGORY_RAW_AUDIO       = 14;
+  CATEGORY_EMOTIONS        = 15;
+  CATEGORY_PERSONALITY     = 16;
+  CATEGORY_ACTIONS         = 17;
+  CATEGORY_AUDIT           = 18;
+}
+
+enum RiskLevel {
+  RISK_UNSPECIFIED = 0;
+  RISK_LOW         = 1;
+  RISK_MEDIUM      = 2;
+  RISK_HIGH        = 3;
+  RISK_CRITICAL    = 4;
+}
+
+enum ConfirmationMethod {
+  CONFIRM_UNSPECIFIED = 0;
+  CONFIRM_NONE        = 1;
+  CONFIRM_VOICE       = 2;
+  CONFIRM_BUTTON      = 3;
+  CONFIRM_BIOMETRIC   = 4;
+  CONFIRM_PIN         = 5;
+}
+
+message DeviceMetadata {
+  string device_id = 1;
+  string name      = 2;
+  string kind      = 3; // android | desktop | bridge
+  string platform  = 4;
+  string app_version = 5;
+}
+
+message Capability {
+  string name    = 1; // e.g. audio.capture, vision.capture, screen.capture
+  string version = 2;
+}

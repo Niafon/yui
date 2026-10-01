@@ -1,0 +1,2 @@
+# Install in a separate Python 3.12+ environment; not in the voice environment.
+fara @ https://github.com/microsoft/fara/archive/a675d6d61c41c47ae87bacefeab22caad18e3e84.zip

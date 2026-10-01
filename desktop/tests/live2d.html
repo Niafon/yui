@@ -1,0 +1,9 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self' http://127.0.0.1:* ws://127.0.0.1:*; img-src 'self' data:; style-src 'self' 'unsafe-inline'">
+<title>Live2D smoke test</title>
+<div style="position:relative;width:480px;height:600px"><canvas id="avatar"></canvas></div>
+<pre id="results">Running…</pre>
+<script type="module" src="./live2d-smoke.ts"></script>
+</html>

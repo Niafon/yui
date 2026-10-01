@@ -1,0 +1,445 @@
+{
+  "//": "Профиль под RTX 3080 10 ГБ (ADR-016). Модели — из ADR-017; проверьте, не вышло ли новее, перед установкой.",
+  "data_dir": "./data",
+  "server": {
+    "addr": "0.0.0.0:8765",
+    "require_tls_for_remote": true,
+    "tls_cert_file": "",
+    "tls_key_file": ""
+  },
+  "database": {
+    "driver": "sqlite",
+    "path": "./data/yui.db"
+  },
+  "logging": {
+    "level": "info",
+    "json": false
+  },
+  "providers": [
+    {
+      "id": "openrouter-deepseek-flash",
+      "kind": "llm",
+      "driver": "openai",
+      "endpoint": "https://openrouter.ai/api/v1",
+      "model": "deepseek/deepseek-v4.1-flash",
+      "model_family": "deepseek/deepseek-v4.1-flash",
+      "api_key_env": "OPENROUTER_API_KEY",
+      "local": false,
+      "auto_select": false,
+      "allowed_categories": [
+        "current_text",
+        "session_summary"
+      ]
+    },
+    {
+      "id": "openrouter-qwen-flash",
+      "kind": "llm",
+      "driver": "openai",
+      "endpoint": "https://openrouter.ai/api/v1",
+      "model": "qwen/qwen3.5-flash-02-23",
+      "model_family": "qwen/qwen3.5-flash-02-23",
+      "api_key_env": "OPENROUTER_API_KEY",
+      "local": false,
+      "auto_select": false,
+      "allowed_categories": [
+        "current_text",
+        "session_summary"
+      ]
+    },
+    {
+      "id": "openrouter-qwen-30b",
+      "kind": "llm",
+      "driver": "openai",
+      "endpoint": "https://openrouter.ai/api/v1",
+      "model": "qwen/qwen3-30b-a3b-instruct-2507",
+      "model_family": "qwen/qwen3-30b-a3b-instruct-2507",
+      "api_key_env": "OPENROUTER_API_KEY",
+      "local": false,
+      "auto_select": false,
+      "allowed_categories": [
+        "current_text",
+        "session_summary"
+      ]
+    },
+    {
+      "//": "GPU, резидентная. Q4_K_M ~5-6 ГБ, остаётся место под контекст и TTS.",
+      "id": "local-llm",
+      "kind": "llm",
+      "driver": "openai",
+      "endpoint": "http://127.0.0.1:11434/v1",
+      "model": "qwen3.5:9b-instruct-q4_K_M",
+      "local": true,
+      "model_family": "qwen3.5-9b",
+      "execution_backend": "auto",
+      "quality": 90,
+      "estimated_ram_mb": 7600,
+      "estimated_vram_mb": 6600,
+      "auto_select": false,
+      "keep_warm": true
+    },
+    {
+      "//": "Managed GPU profile. Enable by installing llama-server and the GGUF file at ./models/Qwen3.5-9B-Q4_K_M.gguf.",
+      "id": "qwen35-9b-gpu",
+      "kind": "llm",
+      "driver": "openai",
+      "endpoint": "http://127.0.0.1:11435/v1",
+      "model": "qwen3.5-9b",
+      "local": true,
+      "model_family": "qwen3.5-9b",
+      "execution_backend": "gpu",
+      "quality": 92,
+      "estimated_ram_mb": 1200,
+      "estimated_vram_mb": 7000,
+      "auto_select": true,
+      "gaming_safe": false,
+      "worker_id": "llm-qwen9-gpu"
+    },
+    {
+      "//": "Same 9B model on CPU. A manual qwen3.5-9b lock may move here during a game without changing model quality.",
+      "id": "qwen35-9b-cpu",
+      "kind": "llm",
+      "driver": "openai",
+      "endpoint": "http://127.0.0.1:11436/v1",
+      "model": "qwen3.5-9b",
+      "local": true,
+      "model_family": "qwen3.5-9b",
+      "execution_backend": "cpu",
+      "quality": 92,
+      "estimated_ram_mb": 7600,
+      "estimated_vram_mb": 0,
+      "auto_select": true,
+      "gaming_safe": true,
+      "worker_id": "llm-qwen9-cpu"
+    },
+    {
+      "//": "Fast gaming profile. Auto may downgrade to it when the user allows automatic model switching.",
+      "id": "qwen35-4b-cpu",
+      "kind": "llm",
+      "driver": "openai",
+      "endpoint": "http://127.0.0.1:11437/v1",
+      "model": "qwen3.5-4b",
+      "local": true,
+      "model_family": "qwen3.5-4b",
+      "execution_backend": "cpu",
+      "quality": 76,
+      "estimated_ram_mb": 3900,
+      "estimated_vram_mb": 0,
+      "auto_select": true,
+      "gaming_safe": true,
+      "worker_id": "llm-qwen4-cpu"
+    },
+    {
+      "//": "Тяжёлый режим: помещается, но не оставляет места vision-модели.",
+      "id": "local-llm-heavy",
+      "kind": "llm",
+      "driver": "openai",
+      "endpoint": "http://127.0.0.1:11434/v1",
+      "model": "qwen3:14b-instruct-q4_K_M",
+      "local": true,
+      "model_family": "qwen3-14b",
+      "execution_backend": "auto",
+      "quality": 96,
+      "estimated_vram_mb": 9500,
+      "auto_select": false
+    },
+    {
+      "//": "Внешний провайдер. allowed_categories — это решение владельца; всё остальное блокируется до явного согласия.",
+      "id": "openrouter",
+      "kind": "llm",
+      "driver": "openai",
+      "endpoint": "https://openrouter.ai/api/v1",
+      "model": "deepseek/deepseek-v4.1-flash",
+      "api_key_env": "OPENROUTER_API_KEY",
+      "local": false,
+      "allowed_categories": [
+        "current_text",
+        "session_summary"
+      ]
+    },
+    {
+      "//": "CPU: INT8 ONNX, освобождает VRAM под LLM. Лицензия CC-BY-4.0, атрибуция в NOTICE.",
+      "id": "stt-worker",
+      "kind": "stt",
+      "driver": "worker",
+      "endpoint": "http://127.0.0.1:8802",
+      "model": "parakeet-tdt-0.6b-v3",
+      "local": true,
+      "model_family": "parakeet-0.6b",
+      "execution_backend": "cpu",
+      "quality": 82,
+      "estimated_ram_mb": 1200,
+      "gaming_safe": true,
+      "auto_select": true,
+      "keep_warm": true
+    },
+    {
+      "//": "GPU ~1.5-2 ГБ, стриминг ~150 мс до первого пакета, клонирование голоса.",
+      "id": "tts-worker",
+      "kind": "tts",
+      "driver": "worker",
+      "endpoint": "http://127.0.0.1:8803",
+      "model": "cosyvoice2-0.5b",
+      "local": true,
+      "model_family": "cosyvoice2-0.5b",
+      "execution_backend": "gpu",
+      "quality": 88,
+      "estimated_vram_mb": 1800,
+      "gaming_safe": false,
+      "auto_select": true,
+      "keep_warm": true
+    },
+    {
+      "//": "ADR-036: зрение через уже загруженную мультимодальную LLM — экономит 2-3 ГБ VRAM и снимает выгрузку модели.",
+      "id": "vision-llm",
+      "kind": "vision",
+      "driver": "openai",
+      "endpoint": "http://127.0.0.1:11434/v1",
+      "model": "qwen3.5:9b-instruct-q4_K_M",
+      "local": true,
+      "model_family": "qwen3.5-9b-vision",
+      "execution_backend": "auto",
+      "quality": 90,
+      "estimated_vram_mb": 6600,
+      "auto_select": false
+    },
+    {
+      "//": "Альтернатива: отдельный VLM. Точнее на OCR и мелких деталях, но требует выгрузки. Переключается одной строкой в default_providers.",
+      "id": "vision-worker",
+      "kind": "vision",
+      "driver": "worker",
+      "endpoint": "http://127.0.0.1:8804",
+      "model": "qwen3-vl-4b-q4",
+      "local": true,
+      "model_family": "qwen3-vl-4b",
+      "execution_backend": "gpu",
+      "quality": 84,
+      "estimated_vram_mb": 3200,
+      "auto_select": true,
+      "gaming_safe": false,
+      "worker_id": "vision"
+    },
+    {
+      "//": "CPU. Qwen3-Embedding-0.6B поддерживает MRL; начинаем с 256d, exact-search не теряет recall из-за ANN.",
+      "id": "embed-worker",
+      "kind": "embeddings",
+      "driver": "worker",
+      "endpoint": "http://127.0.0.1:8801",
+      "model": "Qwen/Qwen3-Embedding-0.6B",
+      "local": true,
+      "model_family": "qwen3-embedding-0.6b",
+      "execution_backend": "cpu",
+      "quality": 85,
+      "estimated_ram_mb": 900,
+      "gaming_safe": true,
+      "auto_select": true,
+      "keep_warm": true
+    }
+  ],
+  "default_providers": {
+    "llm": "local-llm",
+    "stt": "stt-worker",
+    "tts": "tts-worker",
+    "vision": "vision-llm",
+    "embeddings": "embed-worker"
+  },
+  "workers": [
+    {
+      "//": "Cold-started by Model Manager; paths are intentionally explicit so missing weights fail visibly and Auto can fall back.",
+      "id": "llm-qwen9-gpu",
+      "command": "llama-server",
+      "args": ["-m", "../models/Qwen3.5-9B-Q4_K_M.gguf", "-ngl", "999", "-c", "8192", "--host", "127.0.0.1", "--port", "11435"],
+      "dir": "../core",
+      "health_url": "http://127.0.0.1:11435/health",
+      "autostart": false,
+      "restart": false
+    },
+    {
+      "id": "llm-qwen9-cpu",
+      "command": "llama-server",
+      "args": ["-m", "../models/Qwen3.5-9B-Q4_K_M.gguf", "-ngl", "0", "-t", "6", "-c", "8192", "--host", "127.0.0.1", "--port", "11436"],
+      "dir": "../core",
+      "health_url": "http://127.0.0.1:11436/health",
+      "autostart": false,
+      "restart": false
+    },
+    {
+      "id": "llm-qwen4-cpu",
+      "command": "llama-server",
+      "args": ["-m", "../models/Qwen3.5-4B-Q4_K_M.gguf", "-ngl", "0", "-t", "4", "-c", "8192", "--host", "127.0.0.1", "--port", "11437"],
+      "dir": "../core",
+      "health_url": "http://127.0.0.1:11437/health",
+      "autostart": false,
+      "restart": false
+    },
+    {
+      "id": "embeddings",
+      "command": "python3",
+      "args": [
+        "-m",
+        "yui_worker",
+        "--kind",
+        "embeddings",
+        "--port",
+        "8801",
+        "--model",
+        "Qwen/Qwen3-Embedding-0.6B",
+        "--device",
+        "cpu",
+        "--embedding-dim",
+        "256"
+      ],
+      "dir": "../workers",
+      "health_url": "http://127.0.0.1:8801/healthz",
+      "autostart": true,
+      "restart": true
+    },
+    {
+      "id": "stt",
+      "command": "python3",
+      "args": [
+        "-m",
+        "yui_worker",
+        "--kind",
+        "stt",
+        "--port",
+        "8802",
+        "--model",
+        "parakeet-tdt-0.6b-v3",
+        "--device",
+        "cpu"
+      ],
+      "dir": "../workers",
+      "health_url": "http://127.0.0.1:8802/healthz",
+      "autostart": true,
+      "restart": true
+    },
+    {
+      "id": "tts",
+      "command": "python3",
+      "args": [
+        "-m",
+        "yui_worker",
+        "--kind",
+        "tts",
+        "--port",
+        "8803",
+        "--model",
+        "cosyvoice2-0.5b"
+      ],
+      "dir": "../workers",
+      "health_url": "http://127.0.0.1:8803/healthz",
+      "autostart": true,
+      "restart": true
+    },
+    {
+      "//": "autostart=false: зрение идёт через LLM. Включите, если переключились на vision-worker.",
+      "id": "vision",
+      "command": "python3",
+      "args": [
+        "-m",
+        "yui_worker",
+        "--kind",
+        "vision",
+        "--port",
+        "8804",
+        "--model",
+        "qwen3-vl-4b",
+        "--unload-after",
+        "120"
+      ],
+      "dir": "../workers",
+      "health_url": "http://127.0.0.1:8804/healthz",
+      "autostart": false,
+      "restart": true
+    }
+  ],
+  "memory": {
+    "raw_transcript_ttl_days": 14,
+    "frame_ttl_days": 7,
+    "trash_retention_days": 30,
+    "media_quota_mb": 20480,
+    "retrieval_limit": 12,
+    "min_confirm_confidence": 0.55
+  },
+  "privacy": {
+    "allow_remote_by_default": false,
+    "local_allowed_categories": [
+      "current_text",
+      "session_summary",
+      "conversation",
+      "profile",
+      "preferences",
+      "projects",
+      "calendar",
+      "places",
+      "vision",
+      "emotions",
+      "personality"
+    ]
+  },
+  "scheduler": {
+    "enabled": true,
+    "tick_seconds": 20,
+    "max_parallel_jobs": 1,
+    "pause_on_active_turn": true
+  },
+  "inference": {
+    "//": "Manual locks the model family; Auto may switch models/backends. Session-level provider selection has even higher priority.",
+    "enabled": true,
+    "mode": "auto",
+    "preferred_provider": "qwen35-9b-gpu",
+    "locked_model": "",
+    "allow_auto_downgrade": true,
+    "minimum_quality": 55,
+    "max_gpu_util_percent": 82,
+    "max_cpu_util_percent": 88,
+    "vram_reserve_mb": 3072,
+    "max_fps_impact_percent": 2,
+    "poll_interval_ms": 3000,
+    "warmup_timeout_seconds": 45,
+    "gaming_processes": ["dota2.exe", "cs2.exe", "csgo.exe", "RobloxPlayerBeta.exe", "deadlock.exe"]
+  },
+  "voice": {
+    "//": "ADR-020 и ADR-021. wake_word: off | device | core. barge_in: off | button | wake_word | any_speech.",
+    "wake_word": {
+      "mode": "device",
+      "phrase": "юи",
+      "sensitivity": 0.5
+    },
+    "barge_in": {
+      "mode": "button",
+      "min_speech_ms": 350,
+      "require_echo_cancellation": true
+    },
+    "speaker_verification": false
+  },
+  "vision": {
+    "//": "ADR-028. event_mode: off | manual | motion | periodic | smart — лучший режим определяется тестами.",
+    "event_mode": "manual",
+    "min_interval_ms": 4000,
+    "motion_threshold": 0.12,
+    "unload_after_seconds": 120
+  },
+  "remote": {
+    "//": "ADR-029. lan | vpn | relay; relay пока отклоняется при старте.",
+    "mode": "lan"
+  },
+  "diagnostics": {
+    "//": "ADR-034. Профили доступны только с loopback и выключены по умолчанию: дамп горутин описывает активность владельца.",
+    "enabled": false,
+    "leak_check_minutes": 30
+  },
+  "web_search": {
+    "//": "Публичный поиск DuckDuckGo. Перед отправкой запроса Юи просит подтвердить его в диалоге.",
+    "enabled": false
+  },
+  "crypto": {
+    "//": "ADR-024/025. Пароль передаётся через YUI_PASSWORD; recovery-ключ печатается один раз при инициализации.",
+    "enabled": true,
+    "key_file": "./data/yui.key",
+    "argon2_time": 3,
+    "argon2_memory_mb": 64,
+    "argon2_threads": 4,
+    "encrypt_sensitive_only": true
+  }
+}

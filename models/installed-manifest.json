@@ -1,0 +1,190 @@
+[
+  {
+    "url": "https://huggingface.co/unsloth/Qwen3.5-9B-GGUF/resolve/3885219b6810b007914f3a7950a8d1b469d598a5/Qwen3.5-9B-Q4_K_M.gguf",
+    "path": "models\\Qwen3.5-9B-Q4_K_M.gguf",
+    "size": 5680522464,
+    "sha256": "03b74727a860a56338e042c4420bb3f04b2fec5734175f4cb9fa853daf52b7e8",
+    "repo": "unsloth/Qwen3.5-9B-GGUF",
+    "revision": "3885219b6810b007914f3a7950a8d1b469d598a5"
+  },
+  {
+    "url": "https://huggingface.co/unsloth/Qwen3.5-9B-GGUF/resolve/3885219b6810b007914f3a7950a8d1b469d598a5/mmproj-F16.gguf",
+    "path": "models\\mmproj-F16.gguf",
+    "size": 918166080,
+    "sha256": "f70dc3509053962b0d0d3ee8a7eacebf5d60aa560cad78254ae8698516ae029f",
+    "repo": "unsloth/Qwen3.5-9B-GGUF",
+    "revision": "3885219b6810b007914f3a7950a8d1b469d598a5"
+  },
+  {
+    "url": "https://huggingface.co/unsloth/Qwen3.5-4B-GGUF/resolve/e87f176479d0855a907a41277aca2f8ee7a09523/Qwen3.5-4B-Q4_K_M.gguf",
+    "path": "models\\Qwen3.5-4B-Q4_K_M.gguf",
+    "size": 2740937888,
+    "sha256": "00fe7986ff5f6b463e62455821146049db6f9313603938a70800d1fb69ef11a4",
+    "repo": "unsloth/Qwen3.5-4B-GGUF",
+    "revision": "e87f176479d0855a907a41277aca2f8ee7a09523"
+  },
+  {
+    "url": "https://huggingface.co/Qwen/Qwen3-Embedding-0.6B/resolve/97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3/1_Pooling/config.json",
+    "path": "models\\Qwen3-Embedding-0.6B\\1_Pooling\\config.json",
+    "size": 313,
+    "sha256": null,
+    "repo": "Qwen/Qwen3-Embedding-0.6B",
+    "revision": "97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3"
+  },
+  {
+    "url": "https://huggingface.co/Qwen/Qwen3-Embedding-0.6B/resolve/97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3/README.md",
+    "path": "models\\Qwen3-Embedding-0.6B\\README.md",
+    "size": 17237,
+    "sha256": null,
+    "repo": "Qwen/Qwen3-Embedding-0.6B",
+    "revision": "97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3"
+  },
+  {
+    "url": "https://huggingface.co/Qwen/Qwen3-Embedding-0.6B/resolve/97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3/config.json",
+    "path": "models\\Qwen3-Embedding-0.6B\\config.json",
+    "size": 727,
+    "sha256": null,
+    "repo": "Qwen/Qwen3-Embedding-0.6B",
+    "revision": "97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3"
+  },
+  {
+    "url": "https://huggingface.co/Qwen/Qwen3-Embedding-0.6B/resolve/97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3/config_sentence_transformers.json",
+    "path": "models\\Qwen3-Embedding-0.6B\\config_sentence_transformers.json",
+    "size": 215,
+    "sha256": null,
+    "repo": "Qwen/Qwen3-Embedding-0.6B",
+    "revision": "97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3"
+  },
+  {
+    "url": "https://huggingface.co/Qwen/Qwen3-Embedding-0.6B/resolve/97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3/generation_config.json",
+    "path": "models\\Qwen3-Embedding-0.6B\\generation_config.json",
+    "size": 117,
+    "sha256": null,
+    "repo": "Qwen/Qwen3-Embedding-0.6B",
+    "revision": "97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3"
+  },
+  {
+    "url": "https://huggingface.co/Qwen/Qwen3-Embedding-0.6B/resolve/97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3/merges.txt",
+    "path": "models\\Qwen3-Embedding-0.6B\\merges.txt",
+    "size": 1671853,
+    "sha256": null,
+    "repo": "Qwen/Qwen3-Embedding-0.6B",
+    "revision": "97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3"
+  },
+  {
+    "url": "https://huggingface.co/Qwen/Qwen3-Embedding-0.6B/resolve/97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3/model.safetensors",
+    "path": "models\\Qwen3-Embedding-0.6B\\model.safetensors",
+    "size": 1191586416,
+    "sha256": "0437e45c94563b09e13cb7a64478fc406947a93cb34a7e05870fc8dcd48e23fd",
+    "repo": "Qwen/Qwen3-Embedding-0.6B",
+    "revision": "97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3"
+  },
+  {
+    "url": "https://huggingface.co/Qwen/Qwen3-Embedding-0.6B/resolve/97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3/modules.json",
+    "path": "models\\Qwen3-Embedding-0.6B\\modules.json",
+    "size": 349,
+    "sha256": null,
+    "repo": "Qwen/Qwen3-Embedding-0.6B",
+    "revision": "97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3"
+  },
+  {
+    "url": "https://huggingface.co/Qwen/Qwen3-Embedding-0.6B/resolve/97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3/tokenizer.json",
+    "path": "models\\Qwen3-Embedding-0.6B\\tokenizer.json",
+    "size": 11423705,
+    "sha256": "def76fb086971c7867b829c23a26261e38d9d74e02139253b38aeb9df8b4b50a",
+    "repo": "Qwen/Qwen3-Embedding-0.6B",
+    "revision": "97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3"
+  },
+  {
+    "url": "https://huggingface.co/Qwen/Qwen3-Embedding-0.6B/resolve/97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3/tokenizer_config.json",
+    "path": "models\\Qwen3-Embedding-0.6B\\tokenizer_config.json",
+    "size": 9706,
+    "sha256": null,
+    "repo": "Qwen/Qwen3-Embedding-0.6B",
+    "revision": "97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3"
+  },
+  {
+    "url": "https://huggingface.co/Qwen/Qwen3-Embedding-0.6B/resolve/97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3/vocab.json",
+    "path": "models\\Qwen3-Embedding-0.6B\\vocab.json",
+    "size": 2776833,
+    "sha256": null,
+    "repo": "Qwen/Qwen3-Embedding-0.6B",
+    "revision": "97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3"
+  },
+  {
+    "url": "https://huggingface.co/Systran/faster-whisper-small/resolve/536b0662742c02347bc0e980a01041f333bce120/README.md",
+    "path": "models\\faster-whisper-small\\README.md",
+    "size": 1998,
+    "sha256": null,
+    "repo": "Systran/faster-whisper-small",
+    "revision": "536b0662742c02347bc0e980a01041f333bce120"
+  },
+  {
+    "url": "https://huggingface.co/Systran/faster-whisper-small/resolve/536b0662742c02347bc0e980a01041f333bce120/config.json",
+    "path": "models\\faster-whisper-small\\config.json",
+    "size": 2370,
+    "sha256": null,
+    "repo": "Systran/faster-whisper-small",
+    "revision": "536b0662742c02347bc0e980a01041f333bce120"
+  },
+  {
+    "url": "https://huggingface.co/Systran/faster-whisper-small/resolve/536b0662742c02347bc0e980a01041f333bce120/model.bin",
+    "path": "models\\faster-whisper-small\\model.bin",
+    "size": 483546902,
+    "sha256": "3e305921506d8872816023e4c273e75d2419fb89b24da97b4fe7bce14170d671",
+    "repo": "Systran/faster-whisper-small",
+    "revision": "536b0662742c02347bc0e980a01041f333bce120"
+  },
+  {
+    "url": "https://huggingface.co/Systran/faster-whisper-small/resolve/536b0662742c02347bc0e980a01041f333bce120/tokenizer.json",
+    "path": "models\\faster-whisper-small\\tokenizer.json",
+    "size": 2203239,
+    "sha256": null,
+    "repo": "Systran/faster-whisper-small",
+    "revision": "536b0662742c02347bc0e980a01041f333bce120"
+  },
+  {
+    "url": "https://huggingface.co/Systran/faster-whisper-small/resolve/536b0662742c02347bc0e980a01041f333bce120/vocabulary.txt",
+    "path": "models\\faster-whisper-small\\vocabulary.txt",
+    "size": 459861,
+    "sha256": null,
+    "repo": "Systran/faster-whisper-small",
+    "revision": "536b0662742c02347bc0e980a01041f333bce120"
+  },
+  {
+    "url": "https://huggingface.co/rhasspy/piper-voices/resolve/1162a9173d0ce503555aed757976b7a9912eae4c/ru/ru_RU/irina/medium/ru_RU-irina-medium.onnx",
+    "path": "models\\piper\\ru\\ru_RU\\irina\\medium\\ru_RU-irina-medium.onnx",
+    "size": 63201294,
+    "sha256": "8ff38212d23da300bbe3705c645e6e5b9475f0bfde01558eb17813e22acaaaaa",
+    "repo": "rhasspy/piper-voices",
+    "revision": "1162a9173d0ce503555aed757976b7a9912eae4c"
+  },
+  {
+    "url": "https://huggingface.co/rhasspy/piper-voices/resolve/1162a9173d0ce503555aed757976b7a9912eae4c/ru/ru_RU/irina/medium/ru_RU-irina-medium.onnx.json",
+    "path": "models\\piper\\ru\\ru_RU\\irina\\medium\\ru_RU-irina-medium.onnx.json",
+    "size": 4765,
+    "sha256": null,
+    "repo": "rhasspy/piper-voices",
+    "revision": "1162a9173d0ce503555aed757976b7a9912eae4c"
+  },
+  {
+    "url": "https://github.com/ggml-org/llama.cpp/releases/download/b10819/cudart-llama-bin-win-cuda-12.4-x64.zip",
+    "path": ".cache/cudart-llama-bin-win-cuda-12.4-x64.zip",
+    "size": 391443627,
+    "sha256": "8c79a9b226de4b3cacfd1f83d24f962d0773be79f1e7b75c6af4ded7e32ae1d6"
+  },
+  {
+    "url": "https://github.com/ggml-org/llama.cpp/releases/download/b10819/llama-b10819-bin-win-cuda-12.4-x64.zip",
+    "path": ".cache/llama-b10819-bin-win-cuda-12.4-x64.zip",
+    "size": 253945203,
+    "sha256": "8acca2d6464c968f9b17e664b093b23e21aada16a8f61b2191a3a588f56518a8"
+  },
+  {
+    "url": "https://huggingface.co/rhasspy/piper-voices/resolve/1162a9173d0ce503555aed757976b7a9912eae4c/ru/ru_RU/irina/medium/MODEL_CARD",
+    "path": "models\\piper\\ru\\ru_RU\\irina\\medium\\MODEL_CARD",
+    "size": 271,
+    "sha256": "f4fc2deb0e8c6219f29202b8dd06c9638c5ffd50ad5c6b2c90cf1aa59d507593",
+    "repo": "rhasspy/piper-voices",
+    "revision": "1162a9173d0ce503555aed757976b7a9912eae4c"
+  }
+]

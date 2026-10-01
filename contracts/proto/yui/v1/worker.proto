@@ -1,0 +1,94 @@
+syntax = "proto3";
+
+// Core to AI worker contract. The MVP transport is JSON over loopback HTTP
+// with these exact field names; gRPC can replace it without touching worker
+// logic (SRS 18.3).
+
+package yui.v1;
+
+option go_package = "github.com/yui-companion/core/gen/yui/v1;yuiv1";
+
+service AIWorker {
+  rpc Transcribe (TranscribeRequest) returns (TranscribeResponse);
+  rpc Synthesize (SynthesizeRequest) returns (SynthesizeResponse);
+  rpc Analyze    (AnalyzeRequest)    returns (AnalyzeResponse);
+  rpc Embed      (EmbedRequest)      returns (EmbedResponse);
+  rpc Health     (HealthRequest)     returns (HealthResponse);
+}
+
+message TranscribeRequest {
+  string session_id = 1;
+  bytes audio = 2;
+  uint32 sample_rate = 3;
+  uint32 channels = 4;
+  string format = 5;
+  string language = 6;
+  bool final = 7;
+  string model = 8;
+}
+
+message TranscribeResponse {
+  string text = 1;
+  double confidence = 2;
+  bool final = 3;
+  string language = 4;
+  optional bool speaker_is_owner = 5;
+}
+
+message SynthesizeRequest {
+  string text = 1;
+  string voice = 2;
+  string emotion = 3;
+  double speed = 4;
+  string format = 5;
+  string model = 6;
+}
+
+message SynthesizeResponse {
+  uint32 sample_rate = 1;
+  repeated AudioSegment chunks = 2;
+}
+
+message AudioSegment {
+  uint32 seq = 1;
+  bytes data = 2;
+}
+
+message AnalyzeRequest {
+  bytes image = 1;
+  string mime = 2;
+  string question = 3;
+  bool want_ocr = 4;
+  string model = 5;
+}
+
+message AnalyzeResponse {
+  string description = 1;
+  repeated string objects = 2;
+  string ocr_text = 3;
+  double confidence = 4;
+}
+
+message EmbedRequest {
+  repeated string texts = 1;
+  string model = 2;
+}
+
+message EmbedResponse {
+  repeated Vector vectors = 1;
+  uint32 dim = 2;
+  string backend = 3;
+}
+
+message Vector {
+  repeated float values = 1;
+}
+
+message HealthRequest {}
+
+message HealthResponse {
+  string id = 1;
+  string kind = 2;
+  bool ready = 3;
+  string detail = 4;
+}

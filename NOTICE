@@ -1,0 +1,35 @@
+Yui Companion
+Copyright 2026 The Yui Companion Authors
+
+This product includes software developed as part of the Yui Companion project
+(https://github.com/yui-companion).
+
+Licensed under the Apache License, Version 2.0. See the LICENSE file.
+
+Third-party components used at runtime keep their own licenses.
+Models in particular must be checked
+separately before redistribution:
+
+  Qwen 3.5 / Qwen 3          Apache-2.0        (Alibaba)
+  Parakeet TDT 0.6B v3       CC-BY-4.0         (NVIDIA) — attribution required
+  Voxtral Realtime           Apache-2.0        (Mistral AI)
+  Whisper large-v3           MIT               (OpenAI)
+  CosyVoice2-0.5B            Apache-2.0        (Alibaba)
+  Chatterbox Multilingual    MIT               (Resemble AI)
+  Piper legacy / Silero      MIT / per-voice   — check each voice separately
+  Piper1 (OHF-Voice)         GPL-3.0           — optional external Python worker runtime
+  Piper voice weights        per-voice         — see the model card for ru_RU/irina/medium
+  bge-m3 / multilingual-e5   MIT / Apache-2.0
+
+Live2D models and the Cubism SDK are NOT Apache-licensed. The Cubism SDK has
+its own commercial terms. Local downloaded files in desktop/public/assets/live2d
+include the official Haru sample (CubismWebSamples 4-r.7, copyright Live2D Inc.)
+under the Live2D Free Material License and Cubism Core under the Live2D
+Proprietary Software License. See docs/live2d.md and the downloaded
+LICENSE.samples.md and provenance.json for sources and applicable terms.
+
+VRM body animations in desktop/public/assets/animations are Overte-derived
+clips redistributed by Hanami, licensed Apache-2.0. See that directory's
+NOTICE-Hanami.md, LICENSE-Apache-2.0.txt, and provenance.json for source,
+attribution, pinned revision, and checksums. The three-vrm-animation runtime
+module is MIT-licensed by pixiv.

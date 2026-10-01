@@ -1,0 +1,93 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  core:
+    name: Ядро (Go + embedded SQLite)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.27"
+          cache-dependency-path: core/go.sum
+
+      - name: Зависимости
+        working-directory: core
+        run: go mod download
+
+      - name: Форматирование
+        working-directory: core
+        run: test -z "$(gofmt -l .)" || (gofmt -l . && exit 1)
+
+      - name: Статический анализ
+        working-directory: core
+        run: go vet -tags sqlite_fts5 ./...
+
+      - name: Тесты
+        working-directory: core
+        run: go test -tags sqlite_fts5 ./... -race -count=1
+
+      - name: Сборка с secret mode
+        working-directory: core
+        env:
+          GOEXPERIMENT: runtimesecret
+        run: go build -tags 'sqlite_fts5 yuisecret' ./...
+
+  workers:
+    name: Воркеры (Python)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Тесты
+        working-directory: workers
+        run: python -m unittest discover -s tests -v
+
+  desktop:
+    name: Сцена (TypeScript)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      - working-directory: desktop
+        run: npm install
+      - name: Типы и сборка
+        working-directory: desktop
+        run: npm run build
+      - name: Сценарии подключения
+        working-directory: desktop
+        run: npm test
+
+  mobile:
+    name: Телефон (Flutter + Android)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: "3.44.1"
+          cache: true
+      - name: Зависимости
+        working-directory: mobile
+        run: flutter pub get
+      - name: Анализ
+        working-directory: mobile
+        run: flutter analyze
+      - name: Тесты
+        working-directory: mobile
+        run: flutter test
+      - name: Android APK
+        working-directory: mobile
+        run: flutter build apk --debug
